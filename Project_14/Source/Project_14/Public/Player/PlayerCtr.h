@@ -36,6 +36,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* InteractAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* MouseInteractAction;
+
 protected:
 	virtual void BeginPlay() override;
 

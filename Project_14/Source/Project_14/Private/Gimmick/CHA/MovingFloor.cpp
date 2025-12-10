@@ -15,7 +15,7 @@ void AMovingFloor::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ÇöÀç ¾×ÅÍ À§Ä¡¸¦ ±âÁØÀ¸·Î ½ÃÀÛ/³¡ À§Ä¡ °è»ê
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½
     StartLocation = GetActorLocation();
     EndLocation = StartLocation + TargetOffset;
 
@@ -32,11 +32,11 @@ void AMovingFloor::Tick(float DeltaTime)
         return;
     }
 
-    // ÁøÇà ºñÀ²(0 ~ 1)
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(0 ~ 1)
     ElapsedTime += DeltaTime;
     const float Alpha = FMath::Clamp(ElapsedTime / MoveTime, 0.f, 1.f);
 
-    // ¹æÇâ¿¡ µû¶ó ½ÃÀÛ/³¡ À§Ä¡¸¦ ¹Ù²ã¼­ Lerp
+    // ï¿½ï¿½ï¿½â¿¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½Ù²ã¼­ Lerp
     const FVector From = bForward ? StartLocation : EndLocation;
     const FVector To = bForward ? EndLocation : StartLocation;
 
@@ -46,20 +46,20 @@ void AMovingFloor::Tick(float DeltaTime)
     UE_LOG(LogTemp, Verbose, TEXT("[MovingFloor] Tick: %s, Alpha=%.2f, NewLocation=%s"),
         *GetName(), Alpha, *NewLocation.ToString());
 
-    // ÇÑÂÊ ³¡±îÁö µµ´ÞÇÏ¸é ¹æÇâ ÀüÈ¯ + ½Ã°£ ¸®¼Â ¡æ °è¼Ó ¿Õº¹
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯ + ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Õºï¿½
     if (Alpha >= 1.f)
     {
         bForward = !bForward;
         ElapsedTime = 0.f;
 
-        UE_LOG(LogTemp, Warning, TEXT("[MovingFloor] ¹æÇâ ÀüÈ¯: %s, bForward=%s"),
+        UE_LOG(LogTemp, Warning, TEXT("[MovingFloor] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯: %s, bForward=%s"),
             *GetName(), bForward ? TEXT("true") : TEXT("false"));
     }
 }
 
 void AMovingFloor::StartMove()
 {
-    UE_LOG(LogTemp, Warning, TEXT("[MovingFloor] StartMove È£Ãâ: %s"), *GetName());
+    UE_LOG(LogTemp, Warning, TEXT("[MovingFloor] StartMove È£ï¿½ï¿½: %s"), *GetName());
 
     if (bIsMoving)
     {
@@ -67,7 +67,7 @@ void AMovingFloor::StartMove()
     }
 
     bIsMoving = true;
-    bForward = true;   // Ã³À½Àº Ç×»ó Start -> End ¹æÇâºÎÅÍ
+    bForward = true;   // Ã³ï¿½ï¿½ï¿½ï¿½ ï¿½×»ï¿½ Start -> End ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     ElapsedTime = 0.f;
 }
 

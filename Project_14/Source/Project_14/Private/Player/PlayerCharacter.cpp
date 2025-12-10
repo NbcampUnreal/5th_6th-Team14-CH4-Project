@@ -141,6 +141,16 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 					&APlayerCharacter::PushObject
 				);
 			}
+
+			if (PlayerController->MouseInteractAction)
+			{
+				EnhancedInput->BindAction(
+					PlayerController->MouseInteractAction,
+					ETriggerEvent::Triggered,
+					this,
+					&APlayerCharacter::MouseInput
+				);
+			}
 		}
 	}
 }
@@ -198,6 +208,11 @@ void APlayerCharacter::Look(const FInputActionValue& value)
 	}
 }
 
+void APlayerCharacter::MouseInput(const FInputActionValue& value)
+{
+
+}
+
 void APlayerCharacter::StartSprint(const FInputActionValue& value)
 {
 	if (GetCharacterMovement())
@@ -221,6 +236,7 @@ void APlayerCharacter::EnablePushPhysics()
 	if (GetCharacterMovement())
 	{
 		bIsPushing = true;
+		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed / 3;
 		GetCharacterMovement()->bEnablePhysicsInteraction = true;
 	}
 }
@@ -232,6 +248,7 @@ void APlayerCharacter::DisablePushPhysics()
 	if (GetCharacterMovement())
 	{
 		bIsPushing = false;
+		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 		GetCharacterMovement()->bEnablePhysicsInteraction = false;
 	}
 }
@@ -261,11 +278,13 @@ void APlayerCharacter::PushObject(const FInputActionValue& value)
 	if (bHit && HitResult.GetComponent()->IsSimulatingPhysics())
 	{
 		ApplyPushToHit(HitResult);
+		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed / 2;
 		bIsPushing = true;  // 물체 미는 중
 	}
 	else
 	{
 		bIsPushing = false; // 밀게 없음
+		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 	}
 }
 
