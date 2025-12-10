@@ -14,6 +14,4 @@ class PROJECT_14_API APushOrPull : public AMovingPlatform
 {
 	GENERATED_BODY()
 
-	void MoveActor(float DeltaTime);
-	void RotateActor(float DeltaTime);
 };
