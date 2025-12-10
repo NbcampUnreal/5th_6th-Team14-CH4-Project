@@ -48,6 +48,8 @@ protected:
 	UFUNCTION()
 	void Look(const FInputActionValue& value);
 	UFUNCTION()
+	void MouseInput(const FInputActionValue& value);
+	UFUNCTION()
 	void PushObject(const FInputActionValue& value);
 
 	UFUNCTION(BlueprintCallable, Category = "Sprint")
