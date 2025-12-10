@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -33,8 +31,17 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Gate|Slide")
 	float SlideSpeed = 200.f;
 
+	UPROPERTY(EditAnywhere, Category = "Gate|Rotate")
+	FRotator OpenRotationOffset = FRotator(0.f, 0.f, 0.f); 
+
+	UPROPERTY(EditAnywhere, Category = "Gate|Rotate")
+	float RotateSpeed = 90.f;
+
 	FVector ClosedPos;
 	FVector OpenPos;
+
+	FRotator ClosedRot;
+	FRotator OpenRot;
 
 	bool bIsOpen = false;
 };
