@@ -41,13 +41,13 @@ void AMovingFloor::Tick(float DeltaTime)
     if (Alpha >= 1.f)
     {
         bIsMoving = false;
-        UE_LOG(LogTemp, Warning, TEXT("[MovingFloor] ÀÌµ¿ ¿Ï·á: %s"), *GetName());
+        UE_LOG(LogTemp, Warning, TEXT("[MovingFloor] ï¿½Ìµï¿½ ï¿½Ï·ï¿½: %s"), *GetName());
     }
 }
 
 void AMovingFloor::StartMove()
 {
-    UE_LOG(LogTemp, Warning, TEXT("[MovingFloor] StartMove È£Ãâ: %s"), *GetName());
+    UE_LOG(LogTemp, Warning, TEXT("[MovingFloor] StartMove È£ï¿½ï¿½: %s"), *GetName());
 
     if (bIsMoving)
     {
