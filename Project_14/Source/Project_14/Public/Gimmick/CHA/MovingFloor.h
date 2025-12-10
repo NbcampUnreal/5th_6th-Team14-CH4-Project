@@ -38,11 +38,19 @@ protected:
 
     // 시작 위치에서 얼마나 이동할지 (이 값이 "이동 범위")
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+<<<<<<< Updated upstream
     FVector TargetOffset = FVector(-2400.f, 0.f, 0.f);
 
     // 한 번 왼쪽→오른쪽(혹은 오른쪽→왼쪽) 가는 데 걸리는 시간
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
     float MoveTime = 8.f;
+=======
+    FVector TargetOffset = FVector(-2500.f, 0.f, 0.f);
+
+    // 한 번 왼쪽→오른쪽(혹은 오른쪽→왼쪽) 가는 데 걸리는 시간
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float MoveTime = 7.5f;
+>>>>>>> Stashed changes
 
 private:
     FVector StartLocation;
