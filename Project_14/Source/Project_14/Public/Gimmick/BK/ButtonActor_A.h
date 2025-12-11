@@ -8,8 +8,8 @@ UCLASS()
 class PROJECT_14_API AButtonActor_A : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	AButtonActor_A();
 
 protected:
@@ -25,6 +25,7 @@ protected:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 public:
+
 	UPROPERTY(VisibleAnywhere)
 	class UStaticMeshComponent* ButtonMesh;
 
@@ -35,6 +36,11 @@ public:
 	class AGateActor* TargetGate;
 
 	UPROPERTY(EditAnywhere, Category = "ButtonMode")
+	bool bToggleMode = false;
+
+	UPROPERTY(EditAnywhere, Category = "ButtonMode", meta = (EditCondition = "!bToggleMode"))
 	bool bOneTimeActivation = false;
 
+	UPROPERTY(VisibleAnywhere, Category = "ButtonMode")
+	bool bIsGateOpen = false;
 };
