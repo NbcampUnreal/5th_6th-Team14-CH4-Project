@@ -8,18 +8,17 @@
 #include "GameFramework/Character.h"
 #include "TimerManager.h"
 #include "EngineUtils.h"      // TActorIterator
-#include "Math/RandomStream.h"
-#include "Misc/DateTime.h"
+#include "Math/UnrealMathUtility.h" // FMath::RandBool
 
 ARandomGlassTile::ARandomGlassTile()
 {
     PrimaryActorTick.bCanEverTick = false;
 
-    // Mesh
+    // 메쉬
     TileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TileMesh"));
     SetRootComponent(TileMesh);
 
-    // Trigger
+    // 트리거 박스
     TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
     TriggerBox->SetupAttachment(RootComponent);
     TriggerBox->InitBoxExtent(FVector(50.f, 50.f, 30.f));
@@ -37,11 +36,14 @@ void ARandomGlassTile::BeginPlay()
 
     TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ARandomGlassTile::OnOverlapBegin);
 
-    // Pair 모드: 같은 PairId 가진 타일들을 월드에서 찾아서 한 쌍으로 처리
+    // =========================
+    // ① Pair 모드 (쌍으로 쓰는 타일)
+    // =========================
     if (PairId >= 0)
     {
         TArray<ARandomGlassTile*> PairTiles;
 
+        // 같은 PairId 가진 타일 전부 찾기
         for (TActorIterator<ARandomGlassTile> It(GetWorld()); It; ++It)
         {
             ARandomGlassTile* Tile = *It;
@@ -53,55 +55,40 @@ void ARandomGlassTile::BeginPlay()
 
         if (PairTiles.Num() == 2)
         {
-            // 둘 다 BeginPlay가 돌지만, 딱 하나만 세팅하도록 "대표"를 정함
+            // 둘 다 BeginPlay가 돌지만, 한 Actor만 대표로 세팅 담당
             if (this == PairTiles[0])
             {
-                // 🔥 실행 시간 + PairId를 섞어서 매번 다른 시드 생성
-                int64 NowTicks = FDateTime::Now().GetTicks();
-                int32 Seed = static_cast<int32>(NowTicks & 0xFFFFFFFF) ^ PairId;
+                // 🔥 아무 시드도 안 건드리고, 전역 랜덤에서 bool 하나만 뽑는다.
+                const bool bFirstIsSafe = FMath::RandBool();   // true/false 50:50
 
-                FRandomStream RandStream;
-                RandStream.Initialize(Seed);
-
-                bool bFirstSafe = (RandStream.FRand() < 0.5f);
-
-                PairTiles[0]->bIsSafeTile = bFirstSafe;
-                PairTiles[1]->bIsSafeTile = !bFirstSafe;
+                PairTiles[0]->bIsSafeTile = bFirstIsSafe;
+                PairTiles[1]->bIsSafeTile = !bFirstIsSafe;
 
                 UE_LOG(LogTemp, Warning,
-                    TEXT("PairId %d set: %s = %s, %s = %s (Seed=%d)"),
+                    TEXT("PairId %d : %s SAFE=%s,  %s SAFE=%s"),
                     PairId,
-                    *PairTiles[0]->GetName(),
-                    PairTiles[0]->bIsSafeTile ? TEXT("SAFE") : TEXT("BREAK"),
-                    *PairTiles[1]->GetName(),
-                    PairTiles[1]->bIsSafeTile ? TEXT("SAFE") : TEXT("BREAK"),
-                    Seed);
+                    *PairTiles[0]->GetName(), PairTiles[0]->bIsSafeTile ? TEXT("true") : TEXT("false"),
+                    *PairTiles[1]->GetName(), PairTiles[1]->bIsSafeTile ? TEXT("true") : TEXT("false"));
             }
         }
-        else if (PairTiles.Num() > 2)
+        else if (PairTiles.Num() > 0)
         {
             UE_LOG(LogTemp, Error,
-                TEXT("RandomGlassTile PairId %d has %d tiles. Only 2 tiles are allowed per PairId."),
+                TEXT("RandomGlassTile PairId %d 에 타일이 %d개 있습니다. (쌍당 2개만 사용해야 합니다)"),
                 PairId, PairTiles.Num());
         }
-        // Num() == 1 인 경우: 아직 쌍이 완성 안 된 상태라 여기서는 아무 것도 안 함
     }
-    // Single independent tile (PairId < 0 일 때만)
+    // =========================
+    // ② 단독 타일 모드 (PairId < 0)
+    // =========================
     else if (bRandomizeAtBeginPlay)
     {
-        int64 NowTicks = FDateTime::Now().GetTicks();
-        int32 Seed = static_cast<int32>(NowTicks & 0xFFFFFFFF);
-
-        FRandomStream RandStream;
-        RandStream.Initialize(Seed);
-
-        bIsSafeTile = (RandStream.FRand() < 0.5f);
+        bIsSafeTile = FMath::RandBool();
 
         UE_LOG(LogTemp, Warning,
-            TEXT("RandomGlassTile %s (single) : bIsSafeTile = %s (Seed=%d)"),
+            TEXT("RandomGlassTile %s (single) : SAFE=%s"),
             *GetName(),
-            bIsSafeTile ? TEXT("SAFE") : TEXT("BREAK"),
-            Seed);
+            bIsSafeTile ? TEXT("true") : TEXT("false"));
     }
 }
 
@@ -158,12 +145,13 @@ void ARandomGlassTile::BreakTile()
         TEXT("RandomGlassTile %s : BREAK!"),
         *GetName());
 
-    // Disable collision so the player falls
+    // 충돌 끄고
     TileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-    // Let the mesh fall down with physics
+    // 물리 켜서 아래로 떨어지게
     TileMesh->SetSimulatePhysics(true);
 
+    // 일정 시간 뒤 액터 삭제
     if (LifeTimeAfterBreak > 0.f)
     {
         SetLifeSpan(LifeTimeAfterBreak);
