@@ -5,12 +5,14 @@
 
 AButtonActor_A::AButtonActor_A()
 {
+	PrimaryActorTick.bCanEverTick = false;
+
 	ButtonMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ButtonMesh"));
 	RootComponent = ButtonMesh;
 
 	TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
 	TriggerBox->SetupAttachment(RootComponent);
-	TriggerBox->SetCollisionProfileName("Trigger");
+	TriggerBox->SetCollisionProfileName(TEXT("Trigger"));
 }
 
 void AButtonActor_A::BeginPlay()
@@ -21,12 +23,33 @@ void AButtonActor_A::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning,
 			TEXT("ToggleMode와 OneTimeActivation은 동시에 사용할 수 없습니다. OneTimeActivation을 false로 변경합니다."));
-
 		bOneTimeActivation = false;
 	}
 
 	TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &AButtonActor_A::OnOverlapBegin);
 	TriggerBox->OnComponentEndOverlap.AddDynamic(this, &AButtonActor_A::OnOverlapEnd);
+}
+
+void AButtonActor_A::OpenAllGates()
+{
+	for (AGateActor* Gate : TargetGates)
+	{
+		if (Gate)
+		{
+			Gate->OpenGate();
+		}
+	}
+}
+
+void AButtonActor_A::CloseAllGates()
+{
+	for (AGateActor* Gate : TargetGates)
+	{
+		if (Gate)
+		{
+			Gate->CloseGate();
+		}
+	}
 }
 
 void AButtonActor_A::OnOverlapBegin(
@@ -37,31 +60,37 @@ void AButtonActor_A::OnOverlapBegin(
 	bool bFromSweep,
 	const FHitResult& SweepResult)
 {
-	if (!TargetGate) return;
+	if (TargetGates.Num() == 0)
+		return;
 
 	if (bToggleMode)
 	{
 		if (bIsGateOpen)
 		{
-			TargetGate->CloseGate();
+			CloseAllGates();
 			bIsGateOpen = false;
 		}
 		else
 		{
-			TargetGate->OpenGate();
+			OpenAllGates();
 			bIsGateOpen = true;
 		}
 
 		if (bOneTimeActivation)
+		{
 			TriggerBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
 
-		return; 
+		return;
 	}
 
-	TargetGate->OpenGate();
+	/* Normal Mode */
+	OpenAllGates();
 
 	if (bOneTimeActivation)
+	{
 		TriggerBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 }
 
 void AButtonActor_A::OnOverlapEnd(
@@ -70,11 +99,14 @@ void AButtonActor_A::OnOverlapEnd(
 	UPrimitiveComponent* OtherComp,
 	int32 OtherBodyIndex)
 {
-	if (!TargetGate) return;
+	if (TargetGates.Num() == 0)
+		return;
 
 	if (bToggleMode)
 		return;
 
 	if (!bOneTimeActivation)
-		TargetGate->CloseGate();
+	{
+		CloseAllGates();
+	}
 }
