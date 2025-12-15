@@ -8,6 +8,13 @@ public class Project_14 : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			//Default
+			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
+			
+			//UI
+			"UMG",
+		});
 	}
 }
