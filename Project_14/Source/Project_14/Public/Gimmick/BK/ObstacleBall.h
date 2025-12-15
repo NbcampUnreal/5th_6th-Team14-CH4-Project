@@ -4,15 +4,19 @@
 #include "GameFramework/Actor.h"
 #include "ObstacleBall.generated.h"
 
+class UStaticMeshComponent;
+
 UCLASS()
 class PROJECT_14_API AObstacleBall : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	AObstacleBall();
 
 protected:
 	UPROPERTY(VisibleAnywhere)
-	class UStaticMeshComponent* Mesh;
+	UStaticMeshComponent* Mesh;
+
+	virtual void BeginPlay() override;
 };

@@ -11,12 +11,25 @@ class PROJECT_14_API AGateActor : public AActor
 
 public:
 	AGateActor();
-	
+
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
 	void OpenGate();
 	void CloseGate();
+
+protected:
+	UFUNCTION(Server, Reliable)
+	void ServerOpenGate();
+
+	UFUNCTION(Server, Reliable)
+	void ServerCloseGate();
+
+	UPROPERTY(ReplicatedUsing = OnRep_GateState)
+	bool bIsOpen = false;
+
+	UFUNCTION()
+	void OnRep_GateState();
 
 protected:
 	UPROPERTY(VisibleAnywhere)
@@ -32,7 +45,7 @@ protected:
 	float SlideSpeed = 200.f;
 
 	UPROPERTY(EditAnywhere, Category = "Gate|Rotate")
-	FRotator OpenRotationOffset = FRotator(0.f, 0.f, 0.f); 
+	FRotator OpenRotationOffset = FRotator::ZeroRotator;
 
 	UPROPERTY(EditAnywhere, Category = "Gate|Rotate")
 	float RotateSpeed = 90.f;
@@ -43,5 +56,6 @@ protected:
 	FRotator ClosedRot;
 	FRotator OpenRot;
 
-	bool bIsOpen = false;
+	virtual void GetLifetimeReplicatedProps(
+		TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

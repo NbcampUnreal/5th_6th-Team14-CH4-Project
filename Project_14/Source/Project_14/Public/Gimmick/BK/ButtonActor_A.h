@@ -4,6 +4,10 @@
 #include "GameFramework/Actor.h"
 #include "ButtonActor_A.generated.h"
 
+class UStaticMeshComponent;
+class UBoxComponent;
+class AGateActor;
+
 UCLASS()
 class PROJECT_14_API AButtonActor_A : public AActor
 {
@@ -16,24 +20,39 @@ protected:
 	virtual void BeginPlay() override;
 
 	UFUNCTION()
-	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-		bool bFromSweep, const FHitResult& SweepResult);
+	void OnOverlapBegin(
+		UPrimitiveComponent* OverlappedComp,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult);
 
 	UFUNCTION()
-	void OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	void OnOverlapEnd(
+		UPrimitiveComponent* OverlappedComp,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex);
 
-public:
+	void OpenAllGates();
+	void CloseAllGates();
+
+	UFUNCTION(Server, Reliable)
+	void ServerHandlePress();
+
+	UFUNCTION(Server, Reliable)
+	void ServerHandleRelease();
+
+protected:
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* ButtonMesh;
 
 	UPROPERTY(VisibleAnywhere)
-	class UStaticMeshComponent* ButtonMesh;
+	UBoxComponent* TriggerBox;
 
-	UPROPERTY(VisibleAnywhere)
-	class UBoxComponent* TriggerBox;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gate")
-	class AGateActor* TargetGate;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gate")
+	TArray<AGateActor*> TargetGates;
 
 	UPROPERTY(EditAnywhere, Category = "ButtonMode")
 	bool bToggleMode = false;
@@ -41,6 +60,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = "ButtonMode", meta = (EditCondition = "!bToggleMode"))
 	bool bOneTimeActivation = false;
 
-	UPROPERTY(VisibleAnywhere, Category = "ButtonMode")
+	UPROPERTY(ReplicatedUsing = OnRep_ButtonState)
 	bool bIsGateOpen = false;
+
+	UFUNCTION()
+	void OnRep_ButtonState();
+
+	virtual void GetLifetimeReplicatedProps(
+		TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

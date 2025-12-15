@@ -4,6 +4,8 @@
 #include "GameFramework/Actor.h"
 #include "TransparentPlatform.generated.h"
 
+class UStaticMeshComponent;
+
 UCLASS()
 class PROJECT_14_API ATransparentPlatform : public AActor
 {
@@ -11,8 +13,10 @@ class PROJECT_14_API ATransparentPlatform : public AActor
 
 public:
     ATransparentPlatform();
-    virtual void Tick(float DeltaTime) override;
+
+protected:
     virtual void BeginPlay() override;
+    virtual void Tick(float DeltaTime) override;
 
 protected:
     UPROPERTY(VisibleAnywhere)
@@ -27,6 +31,14 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Platform|Visibility")
     bool bLoop = true;
 
-    float Timer = 0.0f;
+    UPROPERTY(ReplicatedUsing = OnRep_VisibilityState)
     bool bIsVisible = true;
+
+    float Timer = 0.f;
+
+    UFUNCTION()
+    void OnRep_VisibilityState();
+
+    virtual void GetLifetimeReplicatedProps(
+        TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

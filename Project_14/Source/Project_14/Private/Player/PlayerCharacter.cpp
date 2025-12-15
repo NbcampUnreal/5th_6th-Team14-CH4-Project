@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "Net/UnrealNetwork.h"
 #include "DrawDebugHelpers.h"
 
 APlayerCharacter::APlayerCharacter()
@@ -33,7 +34,9 @@ APlayerCharacter::APlayerCharacter()
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
 
-	
+	bReplicates = true;
+	bAlwaysRelevant = true;
+	GetCharacterMovement()->SetIsReplicated(true);
 }
 
 void APlayerCharacter::BeginPlay()
@@ -55,6 +58,19 @@ void APlayerCharacter::BeginPlay()
 	{
 		GetCharacterMovement()->bEnablePhysicsInteraction = false;
 	}
+}
+
+void APlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(APlayerCharacter, CharacterType);
+	DOREPLIFETIME(APlayerCharacter, bIsPushing);
+}
+
+void APlayerCharacter::OnRep_CharacterType()
+{
+	// 타입에 따른 능력 초기화 (애님 / 이동 제한 등)
 }
 
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -300,4 +316,16 @@ void APlayerCharacter::ApplyPushToHit(const FHitResult& Hit)
 
 		HitComp->AddForce(ForceDir * FinalPush, NAME_None, true);
 	}
+}
+
+void APlayerCharacter::Server_PushObject_Implementation()
+{
+}
+
+void APlayerCharacter::Server_DisablePush_Implementation()
+{
+}
+
+void APlayerCharacter::Server_EnablePush_Implementation()
+{
 }
