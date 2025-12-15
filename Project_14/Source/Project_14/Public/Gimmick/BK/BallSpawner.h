@@ -4,12 +4,14 @@
 #include "GameFramework/Actor.h"
 #include "BallSpawner.generated.h"
 
+class AObstacleBall;
+
 UCLASS()
 class PROJECT_14_API ABallSpawner : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	ABallSpawner();
 
 protected:
@@ -17,23 +19,34 @@ protected:
 
 	void SpawnBall();
 
-public:
+	UFUNCTION(Server, Reliable)
+	void ServerStartSpawn();
 
-	UFUNCTION(BlueprintCallable)
-	void StartSpawn();
+	UFUNCTION(Server, Reliable)
+	void ServerStopSpawn();
 
-	UFUNCTION(BlueprintCallable)
-	void StopSpawn();
+protected:
+	UPROPERTY(EditAnywhere, Category = "Spawn Settings")
+	float SpawnInterval = 2.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Spawn Settings")
-	float SpawnInterval = 2.0f; 
+	float BallLifeTime = 7.5f;
 
 	UPROPERTY(EditAnywhere, Category = "Spawn Settings")
-	float BallLifeTime = 7.5f; 
+	TSubclassOf<AObstacleBall> BallClass;
 
-	UPROPERTY(EditAnywhere, Category = "Spawn Settings")
-	TSubclassOf<class AObstacleBall> BallClass;
+	UPROPERTY(ReplicatedUsing = OnRep_SpawnState)
+	bool bIsSpawning = false;
 
 	FTimerHandle SpawnTimerHandle;
-	bool bIsSpawning = false;
+
+	UFUNCTION()
+	void OnRep_SpawnState();
+
+	virtual void GetLifetimeReplicatedProps(
+		TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+public:
+	void StartSpawn();
+	void StopSpawn();
 };

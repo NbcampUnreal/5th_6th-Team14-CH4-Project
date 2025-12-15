@@ -1,12 +1,16 @@
 #include "Gimmick/BK/TransparentPlatform.h"
 #include "Components/StaticMeshComponent.h"
+#include "Net/UnrealNetwork.h"
 
 ATransparentPlatform::ATransparentPlatform()
 {
     PrimaryActorTick.bCanEverTick = true;
 
+    bReplicates = true;                 
+    SetReplicateMovement(false);       
+
     PlatformMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlatformMesh"));
-    RootComponent = PlatformMesh;
+    SetRootComponent(PlatformMesh);
 
     PlatformMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
@@ -14,13 +18,22 @@ ATransparentPlatform::ATransparentPlatform()
 void ATransparentPlatform::BeginPlay()
 {
     Super::BeginPlay();
-    bIsVisible = true;
-    PlatformMesh->SetVisibility(true);
+
+    if (HasAuthority())
+    {
+        bIsVisible = true;
+        Timer = 0.f;
+    }
+
+    OnRep_VisibilityState();
 }
 
 void ATransparentPlatform::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+
+   if (!HasAuthority())
+        return;
 
     Timer += DeltaTime;
 
@@ -28,21 +41,35 @@ void ATransparentPlatform::Tick(float DeltaTime)
     {
         bIsVisible = false;
         Timer = 0.f;
-
-        PlatformMesh->SetVisibility(false);     
-        PlatformMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+        OnRep_VisibilityState();
     }
-
     else if (!bIsVisible && Timer >= InvisibleTime)
     {
         Timer = 0.f;
 
-        if (bLoop)        
+        if (bLoop)
         {
             bIsVisible = true;
-            PlatformMesh->SetVisibility(true);
+            OnRep_VisibilityState();
         }
     }
 }
 
+void ATransparentPlatform::OnRep_VisibilityState()
+{
+    PlatformMesh->SetVisibility(bIsVisible);
 
+    PlatformMesh->SetCollisionEnabled(
+        bIsVisible
+        ? ECollisionEnabled::QueryAndPhysics
+        : ECollisionEnabled::NoCollision
+    );
+}
+
+void ATransparentPlatform::GetLifetimeReplicatedProps(
+    TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(ATransparentPlatform, bIsVisible);
+}
