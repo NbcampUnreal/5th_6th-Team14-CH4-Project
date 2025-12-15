@@ -80,7 +80,7 @@ void AWallToggleButton::OnOverlapEnd(
             HideWallTimerHandle,
             this,
             &AWallToggleButton::HideWall,
-            1.0f,   // 1초 후
+            2.0f,   // 1초 후
             false   // 반복 X
         );
     }
