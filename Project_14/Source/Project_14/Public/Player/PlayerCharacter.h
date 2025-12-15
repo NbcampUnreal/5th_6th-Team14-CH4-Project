@@ -31,10 +31,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	UCameraComponent* CameraComp;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CharacterType")
+	UPROPERTY(ReplicatedUsing = OnRep_CharacterType, EditAnywhere, BlueprintReadWrite)
 	ECharacterType CharacterType;
 
 	virtual void BeginPlay() override;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -51,6 +53,8 @@ protected:
 	void MouseInput(const FInputActionValue& value);
 	UFUNCTION()
 	void PushObject(const FInputActionValue& value);
+	UFUNCTION()
+	void OnRep_CharacterType();
 
 	UFUNCTION(BlueprintCallable, Category = "Sprint")
 	void StartSprint(const FInputActionValue& value);
@@ -59,8 +63,18 @@ protected:
 
 	void EnablePushPhysics();
 	void DisablePushPhysics();
+	void ApplyPushToHit(const FHitResult& Hit);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Push")
+	UFUNCTION(Server, Reliable)
+	void Server_EnablePush();
+
+	UFUNCTION(Server, Reliable)
+	void Server_DisablePush();
+
+	UFUNCTION(Server, Reliable)
+	void Server_PushObject();
+
+	UPROPERTY(Replicated)
 	bool bIsPushing = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Push")
@@ -74,5 +88,5 @@ private:
 	float SprintSpeedMultiplier;
 	float SprintSpeed;
 
-	void ApplyPushToHit(const FHitResult& Hit);
+	
 };
