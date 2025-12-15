@@ -38,25 +38,34 @@ protected:
 	void OpenAllGates();
 	void CloseAllGates();
 
-public:
+	UFUNCTION(Server, Reliable)
+	void ServerHandlePress();
 
+	UFUNCTION(Server, Reliable)
+	void ServerHandleRelease();
+
+protected:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* ButtonMesh;
 
 	UPROPERTY(VisibleAnywhere)
 	UBoxComponent* TriggerBox;
 
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gate")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gate")
 	TArray<AGateActor*> TargetGates;
 
-	
 	UPROPERTY(EditAnywhere, Category = "ButtonMode")
 	bool bToggleMode = false;
 
 	UPROPERTY(EditAnywhere, Category = "ButtonMode", meta = (EditCondition = "!bToggleMode"))
 	bool bOneTimeActivation = false;
 
-	UPROPERTY(VisibleAnywhere, Category = "ButtonMode")
+	UPROPERTY(ReplicatedUsing = OnRep_ButtonState)
 	bool bIsGateOpen = false;
+
+	UFUNCTION()
+	void OnRep_ButtonState();
+
+	virtual void GetLifetimeReplicatedProps(
+		TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

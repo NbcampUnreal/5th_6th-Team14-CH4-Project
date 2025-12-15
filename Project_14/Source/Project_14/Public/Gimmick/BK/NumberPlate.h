@@ -6,8 +6,7 @@
 
 class UStaticMeshComponent;
 class UBoxComponent;
-class UWorld;
-class AGateActor;    
+class ANumberPlatePuzzleManager;
 
 UCLASS()
 class PROJECT_14_API ANumberPlate : public AActor
@@ -29,6 +28,13 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult);
 
+	UFUNCTION()
+	void OnOverlapEnd(
+		UPrimitiveComponent* OverlappedComp,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex);
+
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "NumberPlate")
 	UStaticMeshComponent* PlateMesh;
@@ -40,9 +46,5 @@ public:
 	int32 PlateNumber = 1;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "NumberPlate")
-	AGateActor* GateToOpen;
-
-	bool bCleared = false;
-	static int32 GlobalAnswerNumber;
-	static UWorld* CachedWorld;
+	ANumberPlatePuzzleManager* PuzzleManager;
 };
