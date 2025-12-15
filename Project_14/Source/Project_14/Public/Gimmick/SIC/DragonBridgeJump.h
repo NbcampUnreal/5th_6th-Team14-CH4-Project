@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -11,38 +9,52 @@ class PROJECT_14_API ADragonBridgeJump : public AActor
 {
 	GENERATED_BODY()
 
+public:
+	ADragonBridgeJump();
+
+	virtual void Tick(float DeltaTime) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 protected:
 	virtual void BeginPlay() override;
-public:
-	virtual void Tick(float DeltaTime) override;
-	// Sets default values for this actor's properties
-	ADragonBridgeJump();
+
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* SceneRoot;
+
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* BlockMesh;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	int32 MaxTargetNum = 10;
+
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float MoveSpeed = 200.f;
+
+	UPROPERTY(Replicated)
 	FVector StartLocation;
 
-	UPROPERTY(EditAnywhere)
-	FVector TargetLocation;
-
-	UPROPERTY()
-	TArray<FVector> Targets;
-
+	UPROPERTY(ReplicatedUsing = OnRep_TargetNum)
 	int32 TargetNum = 0;
 
-	UPROPERTY(EditAnywhere)
-	int32 MaxTargetNum = 8;
+	UPROPERTY(Replicated)
+	FVector TargetLocation;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float MoveSpeed = 200.0f;
-	bool bIsEnd;
+	UPROPERTY(Replicated)
+	bool bIsEnd = false;
 
+	TArray<FVector> Targets;
+
+public:
 	UFUNCTION(BlueprintCallable)
 	void ToggleState();
-	UFUNCTION()
+
+private:
+	UFUNCTION(Server, Reliable)
+	void Server_ToggleState();
+
+	void ToggleState_Internal();
 	void NextTarget();
 
+	UFUNCTION()
+	void OnRep_TargetNum();
 };
