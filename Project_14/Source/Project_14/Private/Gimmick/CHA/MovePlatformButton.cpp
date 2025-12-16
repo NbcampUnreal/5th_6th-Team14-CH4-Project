@@ -1,15 +1,16 @@
-// MovePlatformButton.cpp
-
-#include "Gimmick/CHA/MovePlatformButton.h"
+ï»¿#include "Gimmick/CHA/MovePlatformButton.h"
 #include "Gimmick/CHA/MoveablePlatform.h"
 
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "GameFramework/Character.h"
 
 AMovePlatformButton::AMovePlatformButton()
 {
-    PrimaryActorTick.bCanEverTick = true;   // ¹öÆ°Àº Tick »ç¿ë
+    PrimaryActorTick.bCanEverTick = true;
+
+    bReplicates = true;
 
     ButtonMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ButtonMesh"));
     SetRootComponent(ButtonMesh);
@@ -26,6 +27,10 @@ void AMovePlatformButton::BeginPlay()
 {
     Super::BeginPlay();
 
+    // âœ… ì„œë²„ë§Œ ë°”ì¸ë”©
+    if (!HasAuthority())
+        return;
+
     TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &AMovePlatformButton::OnOverlapBegin);
     TriggerBox->OnComponentEndOverlap.AddDynamic(this, &AMovePlatformButton::OnOverlapEnd);
 }
@@ -34,9 +39,12 @@ void AMovePlatformButton::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
+    // âœ… ì„œë²„ë§Œ MoveStep í˜¸ì¶œ
+    if (!HasAuthority())
+        return;
+
     if (bPressed && TargetPlatform)
     {
-        // ¹öÆ° À§¿¡ ¼­ ÀÖ´Â µ¿¾È¸¸ ÇÑ ÇÁ·¹ÀÓ¾¿ ÀÌµ¿
         TargetPlatform->MoveStep(MoveDirection, DeltaTime);
     }
 }
@@ -51,7 +59,7 @@ void AMovePlatformButton::OnOverlapBegin(
 {
     if (Cast<ACharacter>(OtherActor))
     {
-        bPressed = true;   // ¿Ã¶ó¿À¸é ÀÌµ¿ ½ÃÀÛ
+        bPressed = true;
     }
 }
 
@@ -63,6 +71,6 @@ void AMovePlatformButton::OnOverlapEnd(
 {
     if (Cast<ACharacter>(OtherActor))
     {
-        bPressed = false;  // ³»·Á°¡¸é ÀÌµ¿ Á¤Áö
+        bPressed = false;
     }
 }

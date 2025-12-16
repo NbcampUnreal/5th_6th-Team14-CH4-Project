@@ -1,6 +1,4 @@
-﻿// DoorOpenButton.cpp
-
-#include "Gimmick/CHA/DoorOpenButton.h"
+﻿#include "Gimmick/CHA/DoorOpenButton.h"
 
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
@@ -11,16 +9,15 @@ ADoorOpenButton::ADoorOpenButton()
 {
     PrimaryActorTick.bCanEverTick = false;
 
-    // 버튼 메쉬 생성
+    bReplicates = true;
+
     ButtonMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ButtonMesh"));
     SetRootComponent(ButtonMesh);
 
-    // 트리거 박스 생성
     TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
     TriggerBox->SetupAttachment(RootComponent);
     TriggerBox->InitBoxExtent(FVector(80.f, 80.f, 40.f));
 
-    // 오버랩만 받도록 설정
     TriggerBox->SetGenerateOverlapEvents(true);
     TriggerBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     TriggerBox->SetCollisionObjectType(ECC_WorldDynamic);
@@ -31,6 +28,10 @@ ADoorOpenButton::ADoorOpenButton()
 void ADoorOpenButton::BeginPlay()
 {
     Super::BeginPlay();
+
+    // ✅ 서버만 바인딩
+    if (!HasAuthority())
+        return;
 
     TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ADoorOpenButton::OnOverlapBegin);
     TriggerBox->OnComponentEndOverlap.AddDynamic(this, &ADoorOpenButton::OnOverlapEnd);
@@ -49,46 +50,23 @@ void ADoorOpenButton::OnOverlapBegin(
     bool bFromSweep,
     const FHitResult& SweepResult)
 {
-    // 이미 작동했거나, 타겟이 없거나, OtherActor 가 없으면 무시
+    if (!HasAuthority()) return;
+
     if (bAlreadyActivated || TargetWalls.Num() == 0 || !OtherActor)
-    {
         return;
-    }
 
-    // 플레이어만 반응
-    ACharacter* PlayerChar = Cast<ACharacter>(OtherActor);
-    if (!PlayerChar)
-    {
+    if (!Cast<ACharacter>(OtherActor))
         return;
-    }
 
-    // 배열에 들어있는 모든 벽/문 액터들을 순회하면서 처리
     for (AActor* Wall : TargetWalls)
     {
         if (!Wall) continue;
 
-        UE_LOG(LogTemp, Warning,
-            TEXT("[DoorOpenButton] 버튼 발동! 타겟 벽 액터 Destroy 시도: %s"),
-            *Wall->GetName());
-
-        // 1) 컴포넌트 가시성/충돌 끄기
-        TArray<UActorComponent*> Components;
-        Wall->GetComponents(UPrimitiveComponent::StaticClass(), Components);
-
-        for (UActorComponent* Comp : Components)
-        {
-            if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Comp))
-            {
-                Prim->SetVisibility(false, true);
-                Prim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-            }
-        }
-
-        // 2) 액터 파괴
+        // ✅ 서버 Destroy (타겟 액터 Replicates=true면 클라에도 같이 사라짐)
         Wall->Destroy();
     }
 
-    bAlreadyActivated = true; // 한 번만 동작
+    bAlreadyActivated = true;
 }
 
 void ADoorOpenButton::OnOverlapEnd(
@@ -97,5 +75,4 @@ void ADoorOpenButton::OnOverlapEnd(
     UPrimitiveComponent* OtherComp,
     int32 OtherBodyIndex)
 {
-    // 문은 Destroy 되어버렸으니 여기서는 딱히 할 일 없음
 }
