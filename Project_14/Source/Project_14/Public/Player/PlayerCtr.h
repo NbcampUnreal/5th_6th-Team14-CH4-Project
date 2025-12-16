@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "PlayerCharacter.h"
 #include "PlayerCtr.generated.h"
 
 class UInputMappingContext;
@@ -38,6 +39,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* MouseInteractAction;
+
+	UFUNCTION(Server, Reliable, BlueprintCallable)
+	void Server_SelectCharacterType(ECharacterType Type);
+
+	UFUNCTION(Client, Reliable, BlueprintCallable)
+	void Client_SetGameInputMode();
 
 protected:
 	virtual void BeginPlay() override;

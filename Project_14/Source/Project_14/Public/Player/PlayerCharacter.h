@@ -38,6 +38,9 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	UFUNCTION()
+	void OnRep_CharacterType();
+
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -53,8 +56,6 @@ protected:
 	void MouseInput(const FInputActionValue& value);
 	UFUNCTION()
 	void PushObject(const FInputActionValue& value);
-	UFUNCTION()
-	void OnRep_CharacterType();
 
 	UFUNCTION(BlueprintCallable, Category = "Sprint")
 	void StartSprint(const FInputActionValue& value);
@@ -74,7 +75,7 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_PushObject();
 
-	UPROPERTY(Replicated)
+	UPROPERTY(Replicated, BlueprintReadWrite, Category = "Animation")
 	bool bIsPushing = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Push")

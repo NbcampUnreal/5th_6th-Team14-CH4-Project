@@ -70,7 +70,11 @@ void APlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 void APlayerCharacter::OnRep_CharacterType()
 {
-	// 타입에 따른 능력 초기화 (애님 / 이동 제한 등)
+
+	if (CharacterType == ECharacterType::StrongPush)
+	{
+		GetCharacterMovement()->JumpZVelocity = 0.f;
+	}
 }
 
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -134,7 +138,7 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 				);
 			}
 
-			if (PlayerController->InteractAction && CharacterType == ECharacterType::StrongPush)
+			if (PlayerController->InteractAction)
 			{
 				EnhancedInput->BindAction(
 					PlayerController->InteractAction,
@@ -247,29 +251,62 @@ void APlayerCharacter::StopSprint(const FInputActionValue& value)
 
 void APlayerCharacter::EnablePushPhysics()
 {
-	if (CharacterType != ECharacterType::StrongPush) return;
-
-	if (GetCharacterMovement())
+	if (CharacterType != ECharacterType::StrongPush)
 	{
-		bIsPushing = true;
-		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed / 3;
-		GetCharacterMovement()->bEnablePhysicsInteraction = true;
+		return;
 	}
+
+	if (!HasAuthority())
+	{
+		Server_EnablePush();
+		return;
+	}
+
+	bIsPushing = true;
+	GetCharacterMovement()->bEnablePhysicsInteraction = true;
+	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed / 3.f;
 }
 
 void APlayerCharacter::DisablePushPhysics()
 {
 	if (CharacterType != ECharacterType::StrongPush) return;
 
-	if (GetCharacterMovement())
+	if (!HasAuthority())
 	{
-		bIsPushing = false;
-		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
-		GetCharacterMovement()->bEnablePhysicsInteraction = false;
+		Server_DisablePush();
+		return;
 	}
+
+	// 서버 전용 로직
+	bIsPushing = false;
+	GetCharacterMovement()->bEnablePhysicsInteraction = false;
+	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 }
 
 void APlayerCharacter::PushObject(const FInputActionValue& value)
+{
+
+	if (!HasAuthority() && bIsPushing)
+	{
+		Server_PushObject();
+	}
+}
+
+void APlayerCharacter::ApplyPushToHit(const FHitResult& Hit)
+{
+	UPrimitiveComponent* HitComp = Hit.GetComponent();
+	if (HitComp && HitComp->IsSimulatingPhysics())
+	{
+		FVector ForceDir = CameraComp->GetForwardVector();
+		ForceDir.Normalize();
+
+		float FinalPush = PushPower;
+
+		HitComp->AddForce(ForceDir * FinalPush, NAME_None, true);
+	}
+}
+
+void APlayerCharacter::Server_PushObject_Implementation()
 {
 	if (CharacterType != ECharacterType::StrongPush) return;
 
@@ -295,37 +332,25 @@ void APlayerCharacter::PushObject(const FInputActionValue& value)
 	{
 		ApplyPushToHit(HitResult);
 		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed / 2;
-		bIsPushing = true;  // 물체 미는 중
+		bIsPushing = true; 
 	}
 	else
 	{
-		bIsPushing = false; // 밀게 없음
+		bIsPushing = false; 
 		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 	}
 }
 
-void APlayerCharacter::ApplyPushToHit(const FHitResult& Hit)
-{
-	UPrimitiveComponent* HitComp = Hit.GetComponent();
-	if (HitComp && HitComp->IsSimulatingPhysics())
-	{
-		FVector ForceDir = CameraComp->GetForwardVector();
-		ForceDir.Normalize();
-
-		float FinalPush = PushPower;
-
-		HitComp->AddForce(ForceDir * FinalPush, NAME_None, true);
-	}
-}
-
-void APlayerCharacter::Server_PushObject_Implementation()
-{
-}
-
 void APlayerCharacter::Server_DisablePush_Implementation()
 {
+	bIsPushing = false;
+	GetCharacterMovement()->bEnablePhysicsInteraction = false;
+	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 }
 
 void APlayerCharacter::Server_EnablePush_Implementation()
 {
+	bIsPushing = true;
+	GetCharacterMovement()->bEnablePhysicsInteraction = true;
+	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed / 3.f;
 }
