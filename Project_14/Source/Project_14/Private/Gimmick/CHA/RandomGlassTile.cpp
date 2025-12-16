@@ -1,24 +1,22 @@
-﻿// RandomGlassTile.cpp
-
-#include "Gimmick/CHA/RandomGlassTile.h"
+﻿#include "Gimmick/CHA/RandomGlassTile.h"
 
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "GameFramework/Character.h"
-#include "TimerManager.h"
-#include "EngineUtils.h"      // TActorIterator
-#include "Math/UnrealMathUtility.h" // FMath::RandBool
+#include "EngineUtils.h"
+#include "Math/UnrealMathUtility.h"
+#include "Net/UnrealNetwork.h"
 
 ARandomGlassTile::ARandomGlassTile()
 {
     PrimaryActorTick.bCanEverTick = false;
 
-    // 메쉬
+    bReplicates = true;
+
     TileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TileMesh"));
     SetRootComponent(TileMesh);
 
-    // 트리거 박스
     TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
     TriggerBox->SetupAttachment(RootComponent);
     TriggerBox->InitBoxExtent(FVector(50.f, 50.f, 30.f));
@@ -34,16 +32,16 @@ void ARandomGlassTile::BeginPlay()
 {
     Super::BeginPlay();
 
+    // ✅ 서버만 랜덤 결정 + 오버랩 처리
+    if (!HasAuthority())
+        return;
+
     TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ARandomGlassTile::OnOverlapBegin);
 
-    // =========================
-    // ① Pair 모드 (쌍으로 쓰는 타일)
-    // =========================
     if (PairId >= 0)
     {
         TArray<ARandomGlassTile*> PairTiles;
 
-        // 같은 PairId 가진 타일 전부 찾기
         for (TActorIterator<ARandomGlassTile> It(GetWorld()); It; ++It)
         {
             ARandomGlassTile* Tile = *It;
@@ -55,46 +53,18 @@ void ARandomGlassTile::BeginPlay()
 
         if (PairTiles.Num() == 2)
         {
-            // 둘 다 BeginPlay가 돌지만, 한 Actor만 대표로 세팅 담당
             if (this == PairTiles[0])
             {
-                // 🔥 아무 시드도 안 건드리고, 전역 랜덤에서 bool 하나만 뽑는다.
-                const bool bFirstIsSafe = FMath::RandBool();   // true/false 50:50
-
+                const bool bFirstIsSafe = FMath::RandBool();
                 PairTiles[0]->bIsSafeTile = bFirstIsSafe;
                 PairTiles[1]->bIsSafeTile = !bFirstIsSafe;
-
-                UE_LOG(LogTemp, Warning,
-                    TEXT("PairId %d : %s SAFE=%s,  %s SAFE=%s"),
-                    PairId,
-                    *PairTiles[0]->GetName(), PairTiles[0]->bIsSafeTile ? TEXT("true") : TEXT("false"),
-                    *PairTiles[1]->GetName(), PairTiles[1]->bIsSafeTile ? TEXT("true") : TEXT("false"));
             }
         }
-        else if (PairTiles.Num() > 0)
-        {
-            UE_LOG(LogTemp, Error,
-                TEXT("RandomGlassTile PairId %d 에 타일이 %d개 있습니다. (쌍당 2개만 사용해야 합니다)"),
-                PairId, PairTiles.Num());
-        }
     }
-    // =========================
-    // ② 단독 타일 모드 (PairId < 0)
-    // =========================
     else if (bRandomizeAtBeginPlay)
     {
         bIsSafeTile = FMath::RandBool();
-
-        UE_LOG(LogTemp, Warning,
-            TEXT("RandomGlassTile %s (single) : SAFE=%s"),
-            *GetName(),
-            bIsSafeTile ? TEXT("true") : TEXT("false"));
     }
-}
-
-void ARandomGlassTile::Tick(float DeltaTime)
-{
-    Super::Tick(DeltaTime);
 }
 
 void ARandomGlassTile::OnOverlapBegin(
@@ -105,55 +75,25 @@ void ARandomGlassTile::OnOverlapBegin(
     bool bFromSweep,
     const FHitResult& SweepResult)
 {
-    if (bAlreadyTriggered || !OtherActor)
-    {
-        return;
-    }
+    if (!HasAuthority()) return;
 
-    ACharacter* PlayerChar = Cast<ACharacter>(OtherActor);
-    if (!PlayerChar)
-    {
+    if (bAlreadyTriggered || !OtherActor)
         return;
-    }
+
+    if (!Cast<ACharacter>(OtherActor))
+        return;
 
     bAlreadyTriggered = true;
 
     if (bIsSafeTile)
-    {
-        UE_LOG(LogTemp, Warning,
-            TEXT("RandomGlassTile %s : SAFE tile, no break."),
-            *GetName());
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning,
-            TEXT("RandomGlassTile %s : DANGER tile, will break."),
-            *GetName());
+        return;
 
-        GetWorldTimerManager().SetTimer(
-            BreakTimerHandle,
-            this,
-            &ARandomGlassTile::BreakTile,
-            BreakDelay,
-            false);
-    }
+    // ✅ 위험 타일이면 서버에서 즉시 파괴(클라에도 자동 전파)
+    Destroy();
 }
 
-void ARandomGlassTile::BreakTile()
+void ARandomGlassTile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-    UE_LOG(LogTemp, Warning,
-        TEXT("RandomGlassTile %s : BREAK!"),
-        *GetName());
-
-    // 충돌 끄고
-    TileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-    // 물리 켜서 아래로 떨어지게
-    TileMesh->SetSimulatePhysics(true);
-
-    // 일정 시간 뒤 액터 삭제
-    if (LifeTimeAfterBreak > 0.f)
-    {
-        SetLifeSpan(LifeTimeAfterBreak);
-    }
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+    DOREPLIFETIME(ARandomGlassTile, bIsSafeTile);
 }

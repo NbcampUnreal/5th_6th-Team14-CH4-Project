@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "LobbyGameModeBase.generated.h"
 
+struct FRoomInfo;
 /**
  * 
  */
@@ -13,5 +14,12 @@ UCLASS()
 class PROJECT_14_API ALobbyGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+
+
+public:
+	ALobbyGameModeBase();
+
+	UPROPERTY(EditAnywhere)
+	FString GameServerIP;
+	void StartGameForRoom(const FRoomInfo& RoomData);
 };

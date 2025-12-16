@@ -1,9 +1,10 @@
-// WallToggle.h
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "WallToggle.generated.h"
+
+class UStaticMeshComponent;
 
 UCLASS()
 class PROJECT_14_API AWallToggle : public AActor
@@ -17,9 +18,18 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Wall")
     UStaticMeshComponent* WallMesh;
 
+    // âœ… ìƒíƒœë¥¼ ë„¤íŠ¸ì›Œí¬ë¡œ ë™ê¸°í™”
+    UPROPERTY(ReplicatedUsing = OnRep_WallEnabled)
+    bool bWallEnabled = false;
+
+    UFUNCTION()
+    void OnRep_WallEnabled();
+
+    void ApplyWallEnabled(bool bEnable);
+
 public:
-    // true  : º® º¸ÀÌ±â + Ãæµ¹ ÄÑ±â
-    // false : º® ¼û±â±â + Ãæµ¹ ²ô±â
     UFUNCTION(BlueprintCallable, Category = "Wall")
     void SetWallEnabled(bool bEnable);
+
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

@@ -1,30 +1,40 @@
 #include "Gimmick/BK/ObstacleBall.h"
 #include "Components/StaticMeshComponent.h"
-#include "Net/UnrealNetwork.h"
+#include "TimerManager.h"
 
 AObstacleBall::AObstacleBall()
 {
-	PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = false;
 
-	bReplicates = true;                
-	SetReplicateMovement(true);        
+    bReplicates = true;
+    SetReplicateMovement(true);
 
-	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	SetRootComponent(Mesh);
+    Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+    SetRootComponent(Mesh);
 
-	Mesh->SetCollisionProfileName(TEXT("PhysicsActor"));
+    Mesh->SetMobility(EComponentMobility::Movable);
+    Mesh->SetCollisionProfileName(TEXT("PhysicsActor"));
 }
 
 void AObstacleBall::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
 
-	if (HasAuthority())
-	{
-		Mesh->SetSimulatePhysics(true);
-	}
-	else
-	{
-		Mesh->SetSimulatePhysics(false);
-	}
+    if (HasAuthority())
+    {
+        FTimerHandle PhysicsDelayHandle;
+        GetWorldTimerManager().SetTimer(
+            PhysicsDelayHandle,
+            this,
+            &AObstacleBall::EnablePhysics,
+            0.1f,
+            false
+        );
+    }
+}
+
+void AObstacleBall::EnablePhysics()
+{
+    Mesh->SetSimulatePhysics(true);
+    Mesh->WakeAllRigidBodies();
 }

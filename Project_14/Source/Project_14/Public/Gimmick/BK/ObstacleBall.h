@@ -9,14 +9,18 @@ class UStaticMeshComponent;
 UCLASS()
 class PROJECT_14_API AObstacleBall : public AActor
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	AObstacleBall();
+    AObstacleBall();
 
 protected:
-	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* Mesh;
+    virtual void BeginPlay() override;
 
-	virtual void BeginPlay() override;
+    UFUNCTION()
+    void EnablePhysics();
+
+protected:
+    UPROPERTY(VisibleAnywhere)
+    UStaticMeshComponent* Mesh;
 };

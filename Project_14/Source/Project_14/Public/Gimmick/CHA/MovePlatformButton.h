@@ -1,6 +1,4 @@
-// MovePlatformButton.h
-
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -9,6 +7,7 @@
 class UStaticMeshComponent;
 class UBoxComponent;
 class AMoveablePlatform;
+class UPrimitiveComponent;
 
 UCLASS()
 class PROJECT_14_API AMovePlatformButton : public AActor
@@ -22,23 +21,19 @@ protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
 
-    // ¹öÆ° ¸Ş½¬
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     UStaticMeshComponent* ButtonMesh;
 
-    // ÇÃ·¹ÀÌ¾î °¨Áö¿ë ¹Ú½º
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     UBoxComponent* TriggerBox;
 
-    // ¿òÁ÷ÀÏ ¹ßÆÇ BP ÁöÁ¤
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Button")
-    AMoveablePlatform* TargetPlatform;
+    // âœ… ì¸ìŠ¤í„´ìŠ¤ì—ì„œ ì§€ì • ê¶Œì¥
+    UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Button")
+    AMoveablePlatform* TargetPlatform = nullptr;
 
-    // ÀÌµ¿ ¹æÇâ (¾ÕÀ¸·Î¸¸ ¾²·Á¸é (1,0,0) °íÁ¤)
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Button")
     FVector MoveDirection = FVector(1.f, 0.f, 0.f);
 
-    // ¹öÆ° À§¿¡ ÇÃ·¹ÀÌ¾î°¡ ¿Ã¶ó¿Í ÀÖ´ÂÁö
     bool bPressed = false;
 
     UFUNCTION()
