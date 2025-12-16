@@ -1,6 +1,4 @@
-// RandomGlassTile.h
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -8,12 +6,8 @@
 
 class UStaticMeshComponent;
 class UBoxComponent;
+class UPrimitiveComponent;
 
-/**
- * Squid Game style glass tile.
- * - If PairId >= 0 : exactly one tile in the pair is safe, the other breaks.
- * - If PairId  < 0 : works as a single tile with 50% chance.
- */
 UCLASS()
 class PROJECT_14_API ARandomGlassTile : public AActor
 {
@@ -25,46 +19,27 @@ public:
 protected:
     virtual void BeginPlay() override;
 
-    /** Visual mesh of the tile */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
     UStaticMeshComponent* TileMesh;
 
-    /** Trigger to detect when the player steps on the tile */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
     UBoxComponent* TriggerBox;
 
-    /** If PairId < 0, decide safe/break randomly at BeginPlay */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GlassTrap")
     bool bRandomizeAtBeginPlay = true;
 
-    /** Is this tile safe? (true = safe, false = will break) */
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GlassTrap")
+    // ✅ 서버가 결정한 안전/위험을 클라에 동기화
+    UPROPERTY(ReplicatedUsing = OnRep_IsSafeTile, EditAnywhere, BlueprintReadOnly, Category = "GlassTrap")
     bool bIsSafeTile = true;
 
-    /** Delay before the tile actually breaks (seconds) */
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GlassTrap")
-    float BreakDelay = 0.3f;
+    UFUNCTION()
+    void OnRep_IsSafeTile() {}
 
-    /** Life time after breaking (seconds). 0 = never destroy actor automatically. */
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GlassTrap")
-    float LifeTimeAfterBreak = 3.0f;
-
-    /**
-     * If PairId >= 0:
-     *   Tiles with the same PairId are treated as a pair (2 tiles).
-     *   Exactly one of them becomes safe, the other becomes breakable.
-     * If PairId < 0:
-     *   This tile works as a single independent tile.
-     */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GlassTrap")
     int32 PairId = -1;
 
-    /** Make sure the tile only triggers once. */
     bool bAlreadyTriggered = false;
 
-    FTimerHandle BreakTimerHandle;
-
-    /** Called when the player steps on the tile. */
     UFUNCTION()
     void OnOverlapBegin(
         UPrimitiveComponent* OverlappedComp,
@@ -74,10 +49,6 @@ protected:
         bool bFromSweep,
         const FHitResult& SweepResult);
 
-    /** Actual breaking logic. */
-    UFUNCTION()
-    void BreakTile();
-
 public:
-    virtual void Tick(float DeltaTime) override;
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

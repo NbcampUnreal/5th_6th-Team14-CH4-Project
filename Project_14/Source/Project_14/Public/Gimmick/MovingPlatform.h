@@ -4,37 +4,45 @@
 #include "GameFramework/Actor.h"
 #include "MovingPlatform.generated.h"
 
+class UStaticMeshComponent;
+
 UCLASS()
 class PROJECT_14_API AMovingPlatform : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	AMovingPlatform();
 
+protected:
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
+
+protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ActorA|Components")
 	USceneComponent* SceneRoot;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActorA|Components")
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ActorA|Components")
 	UStaticMeshComponent* StaticMeshComp;
 
 	UPROPERTY(EditAnywhere, Category = "Moving")
-	FVector MovingSpeed = FVector(0.0f, 0.0f, 0.0f);
+	FVector MovingSpeed = FVector::ZeroVector;
 
 	UPROPERTY(EditAnywhere, Category = "Moving")
-	FRotator RotationSpeed = FRotator(0.0f, 0.0f, 0.0f);
+	FRotator RotationSpeed = FRotator::ZeroRotator;
 
 	UPROPERTY(EditAnywhere, Category = "Moving")
 	float MovedDistance = 0.0f;
 
+	UPROPERTY(Replicated)
 	FVector StartLocation;
 
-	virtual void BeginPlay() override;
-	virtual void Tick(float Deltatime) override;
+	UPROPERTY(Replicated)
+	FVector CurrentMovingSpeed;
 
 	void MoveActor(float DeltaTime);
 	void RotateActor(float DeltaTime);
 
-	bool ShouldActorReturn() const;
-	float GetDistanceMoved() const;
-
+	virtual void GetLifetimeReplicatedProps(
+		TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

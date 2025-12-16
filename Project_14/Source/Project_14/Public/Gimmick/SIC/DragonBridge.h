@@ -13,6 +13,7 @@ class PROJECT_14_API ADragonBridge : public AActor
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 public:
 	virtual void Tick(float DeltaTime) override;
 	// Sets default values for this actor's properties
@@ -22,27 +23,32 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* BlockMesh;
 
-	UPROPERTY(EditAnywhere)
-	FVector StartLocation;
 
-	UPROPERTY(EditAnywhere)
-	FVector TargetLocation;
-
-	UPROPERTY()
-	TArray<FVector> Targets;
-
-	int32 TargetNum = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float MoveSpeed = 200.0f;
 
 	UPROPERTY(EditAnywhere)
 	int32 MaxTargetNum = 8;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float MoveSpeed = 200.0f;
-	bool bIsEnd;
+	UPROPERTY(ReplicatedUsing = OnRep_TargetNum)
+	int32 TargetNum = 0;
+
+	UPROPERTY(Replicated)
+	FVector StartLocation;
+
+	UPROPERTY(Replicated)
+	FVector TargetLocation;
+	UPROPERTY(Replicated)
+	bool bIsEnd = false;
+	TArray<FVector> Targets;
 
 	UFUNCTION(BlueprintCallable)
 	void ToggleState();
-	UFUNCTION()
+private:
+	UFUNCTION(Server, Reliable)
+	void Server_ToggleState();
+	void ToggleState_Internal();
 	void NextTarget();
-
+	UFUNCTION()
+	void OnRep_TargetNum();
 };
