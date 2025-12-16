@@ -58,12 +58,8 @@ void ATransparentPlatform::Tick(float DeltaTime)
 void ATransparentPlatform::OnRep_VisibilityState()
 {
     PlatformMesh->SetVisibility(bIsVisible);
-
-    PlatformMesh->SetCollisionEnabled(
-        bIsVisible
-        ? ECollisionEnabled::QueryAndPhysics
-        : ECollisionEnabled::NoCollision
-    );
+    PlatformMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    PlatformMesh->SetCollisionResponseToAllChannels(ECR_Block);
 }
 
 void ATransparentPlatform::GetLifetimeReplicatedProps(
