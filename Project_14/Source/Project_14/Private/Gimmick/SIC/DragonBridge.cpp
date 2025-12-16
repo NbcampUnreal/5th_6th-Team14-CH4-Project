@@ -4,12 +4,15 @@
 #include "Gimmick/SIC/DragonBridge.h"
 #include "Gimmick/SIC/MakerBlock.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 ADragonBridge::ADragonBridge()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRoot;
@@ -23,12 +26,16 @@ void ADragonBridge::BeginPlay()
 {
 	Super::BeginPlay();
 	StartLocation = SceneRoot->GetRelativeLocation();
+
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 	SetActorTickEnabled(false);
+
 	TArray <AActor*> Found;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMakerBlock::StaticClass(), Found);
+
 	Targets.SetNum(MaxTargetNum);
+
 	for (AActor* A : Found)
 	{
 		AMakerBlock* Marker = Cast<AMakerBlock>(A);
@@ -38,6 +45,21 @@ void ADragonBridge::BeginPlay()
 	}
 }
 void ADragonBridge::ToggleState()
+{
+	if (HasAuthority())
+	{
+		ToggleState_Internal();
+	}
+	else
+	{
+		Server_ToggleState();
+	}
+}
+void ADragonBridge::Server_ToggleState_Implementation()
+{
+	ToggleState_Internal();
+}
+void ADragonBridge::ToggleState_Internal()
 {
 	SceneRoot->SetRelativeLocation(StartLocation);
 
@@ -50,6 +72,7 @@ void ADragonBridge::ToggleState()
 	SetActorTickEnabled(true);
 	PrimaryActorTick.SetTickFunctionEnable(true);
 	UE_LOG(LogTemp, Warning, TEXT("ToggleState Ativate"));
+
 }
 void ADragonBridge::NextTarget()
 {
@@ -68,9 +91,15 @@ void ADragonBridge::NextTarget()
 void ADragonBridge::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (!HasAuthority()) return;
+
 	FVector Current = SceneRoot->GetRelativeLocation();
+
 	UE_LOG(LogTemp, Warning, TEXT("Move!"));
-	FVector NewLocation = FMath::VInterpConstantTo(Current, TargetLocation, DeltaTime, MoveSpeed);
+
+	FVector NewLocation = 
+		FMath::VInterpConstantTo(Current, TargetLocation, DeltaTime, MoveSpeed);
 
 	SceneRoot->SetRelativeLocation(NewLocation);
 
@@ -88,3 +117,16 @@ void ADragonBridge::Tick(float DeltaTime)
 
 }
 
+void ADragonBridge::OnRep_TargetNum()
+{
+
+}
+void ADragonBridge::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ADragonBridge, TargetNum);
+	DOREPLIFETIME(ADragonBridge, StartLocation);
+	DOREPLIFETIME(ADragonBridge, TargetLocation);
+	DOREPLIFETIME(ADragonBridge, bIsEnd);
+}
