@@ -1,27 +1,45 @@
-﻿// WallToggle.cpp
-#include "Gimmick/CHA/WallToggle.h"
+﻿#include "Gimmick/CHA/WallToggle.h"
 #include "Components/StaticMeshComponent.h"
+#include "Net/UnrealNetwork.h"
 
 AWallToggle::AWallToggle()
 {
     PrimaryActorTick.bCanEverTick = false;
 
+    bReplicates = true;
+
     WallMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WallMesh"));
     SetRootComponent(WallMesh);
 
-    // 🔹 시작 상태: "안 보이고, 충돌 없음" (벽이 없는 상태)
-    WallMesh->SetVisibility(false);
-    WallMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    ApplyWallEnabled(false);
+    bWallEnabled = false;
+}
+
+void AWallToggle::ApplyWallEnabled(bool bEnable)
+{
+    if (!WallMesh) return;
+
+    WallMesh->SetVisibility(bEnable);
+    WallMesh->SetCollisionEnabled(bEnable ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+}
+
+void AWallToggle::OnRep_WallEnabled()
+{
+    ApplyWallEnabled(bWallEnabled);
 }
 
 void AWallToggle::SetWallEnabled(bool bEnable)
 {
-    if (!WallMesh) return;
+    // ✅ 서버에서만 상태 변경
+    if (!HasAuthority())
+        return;
 
-    // bEnable = true  → 보이기 + 충돌 켜기
-    // bEnable = false → 숨기기 + 충돌 끄기
-    WallMesh->SetVisibility(bEnable);
-    WallMesh->SetCollisionEnabled(
-        bEnable ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision
-    );
+    bWallEnabled = bEnable;
+    ApplyWallEnabled(bWallEnabled);
+}
+
+void AWallToggle::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+    DOREPLIFETIME(AWallToggle, bWallEnabled);
 }

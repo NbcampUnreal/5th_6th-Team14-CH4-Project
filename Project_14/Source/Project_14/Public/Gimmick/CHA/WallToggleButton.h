@@ -1,5 +1,4 @@
-// WallToggleButton.h
-#pragma once
+Ôªø#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -8,6 +7,7 @@
 class UStaticMeshComponent;
 class UBoxComponent;
 class AWallToggle;
+class UPrimitiveComponent;
 
 UCLASS()
 class PROJECT_14_API AWallToggleButton : public AActor
@@ -18,24 +18,23 @@ public:
     AWallToggleButton();
 
 protected:
+    virtual void BeginPlay() override;
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Button")
     UStaticMeshComponent* ButtonMesh;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Button")
     UBoxComponent* TriggerBox;
 
-    // ¿Ã πˆ∆∞¿Ã ON/OFF Ω√≈≥ ∫Æ
+    // ‚úÖ Ïù∏Ïä§ÌÑ¥Ïä§ÏóêÏÑú ÏßÄÏ†ï Í∂åÏû•
+    UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Button")
+    AWallToggle* TargetWall = nullptr;
+
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Button")
-    AWallToggle* TargetWall;
+    float HideDelay = 2.0f;
 
-    // πˆ∆∞ ¿ßø° «√∑π¿ÃæÓ∞° ø√∂ÛøÕ ¿÷¥¬¡ˆ
     bool bPlayerOnButton = false;
-
-    // ≥ª∑¡∞£ µ⁄ 1√  »ƒø° ∫Æ¿ª ≤Ù±‚ ¿ß«— ≈∏¿Ã∏”
     FTimerHandle HideWallTimerHandle;
-
-protected:
-    virtual void BeginPlay() override;
 
     UFUNCTION()
     void OnOverlapBegin(
@@ -53,6 +52,6 @@ protected:
         UPrimitiveComponent* OtherComp,
         int32 OtherBodyIndex);
 
-    // ≈∏¿Ã∏”∞° »£√‚«œ¥¬ Ω«¡¶ ∫Æ ≤Ù±‚ «‘ºˆ
+    UFUNCTION()
     void HideWall();
 };

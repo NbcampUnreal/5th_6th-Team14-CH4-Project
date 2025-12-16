@@ -7,9 +7,10 @@
 class UStaticMeshComponent;
 class UBoxComponent;
 class AMovingFloor;
+class UPrimitiveComponent;
 
 UCLASS()
-class AButton_CHA : public AActor
+class PROJECT_14_API AButton_CHA : public AActor
 {
     GENERATED_BODY()
 
@@ -25,12 +26,11 @@ protected:
     UPROPERTY(VisibleAnywhere, Category = "Components")
     UBoxComponent* TriggerBox;
 
-    // 🔹 내가 조종할 바닥의 ID (FloorID랑 같은 값으로 설정)
+    // 버튼이 제어할 MovingFloor의 ID
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button")
     FName TargetFloorID = "Floor01";
 
 private:
-    // 🔹 실제로 찾은 바닥(코드에서만 사용)
     AMovingFloor* TargetFloor = nullptr;
 
     UFUNCTION()
@@ -50,6 +50,4 @@ private:
         UPrimitiveComponent* OtherComp,
         int32 OtherBodyIndex
     );
-
-    bool bAlreadyActivated = false;
 };

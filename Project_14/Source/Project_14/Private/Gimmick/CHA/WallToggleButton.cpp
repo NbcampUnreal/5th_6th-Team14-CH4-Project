@@ -1,16 +1,17 @@
-// WallToggleButton.cpp
-#include "Gimmick/CHA/WallToggleButton.h"
+ï»¿#include "Gimmick/CHA/WallToggleButton.h"
 #include "Gimmick/CHA/WallToggle.h"
 
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "GameFramework/Character.h"
-#include "Engine/World.h"
 #include "TimerManager.h"
 
 AWallToggleButton::AWallToggleButton()
 {
     PrimaryActorTick.bCanEverTick = false;
+
+    bReplicates = true;
 
     ButtonMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ButtonMesh"));
     SetRootComponent(ButtonMesh);
@@ -18,7 +19,6 @@ AWallToggleButton::AWallToggleButton()
     TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
     TriggerBox->SetupAttachment(RootComponent);
 
-    // ÇÃ·¹ÀÌ¾î¸¸ °ãÄ¡µµ·Ï ¼³Á¤
     TriggerBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     TriggerBox->SetCollisionResponseToAllChannels(ECR_Ignore);
     TriggerBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
@@ -27,6 +27,10 @@ AWallToggleButton::AWallToggleButton()
 void AWallToggleButton::BeginPlay()
 {
     Super::BeginPlay();
+
+    // âœ… ì„œë²„ë§Œ ë°”ì¸ë”©
+    if (!HasAuthority())
+        return;
 
     TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &AWallToggleButton::OnOverlapBegin);
     TriggerBox->OnComponentEndOverlap.AddDynamic(this, &AWallToggleButton::OnOverlapEnd);
@@ -40,20 +44,12 @@ void AWallToggleButton::OnOverlapBegin(
     bool bFromSweep,
     const FHitResult& SweepResult)
 {
-    if (!OtherActor) return;
-
-    ACharacter* PlayerChar = Cast<ACharacter>(OtherActor);
-    if (!PlayerChar) return;
+    if (!HasAuthority()) return;
+    if (!Cast<ACharacter>(OtherActor)) return;
 
     bPlayerOnButton = true;
+    GetWorldTimerManager().ClearTimer(HideWallTimerHandle);
 
-    // ÀÌ¹Ì º® ²ô±â Å¸ÀÌ¸Ó°¡ °É·Á ÀÖÀ¸¸é Ãë¼Ò
-    if (GetWorld())
-    {
-        GetWorld()->GetTimerManager().ClearTimer(HideWallTimerHandle);
-    }
-
-    // ¹öÆ° À§¿¡ ¿Ã¶ó¿ÔÀ¸´Ï º® ON
     if (TargetWall)
     {
         TargetWall->SetWallEnabled(true);
@@ -66,33 +62,24 @@ void AWallToggleButton::OnOverlapEnd(
     UPrimitiveComponent* OtherComp,
     int32 OtherBodyIndex)
 {
-    if (!OtherActor) return;
-
-    ACharacter* PlayerChar = Cast<ACharacter>(OtherActor);
-    if (!PlayerChar) return;
+    if (!HasAuthority()) return;
+    if (!Cast<ACharacter>(OtherActor)) return;
 
     bPlayerOnButton = false;
 
-    // 1ÃÊ µÚ¿¡ º® ²ô±â Å¸ÀÌ¸Ó ¼³Á¤
-    if (GetWorld())
-    {
-        GetWorld()->GetTimerManager().SetTimer(
-            HideWallTimerHandle,
-            this,
-            &AWallToggleButton::HideWall,
-            2.0f,   // 1ÃÊ ÈÄ
-            false   // ¹Ýº¹ X
-        );
-    }
+    GetWorldTimerManager().SetTimer(
+        HideWallTimerHandle,
+        this,
+        &AWallToggleButton::HideWall,
+        HideDelay,
+        false
+    );
 }
 
 void AWallToggleButton::HideWall()
 {
-    // Å¸ÀÌ¸Ó°¡ ¹ßµ¿ÇßÀ» ¶§, ¸¸¾à ±× »çÀÌ¿¡ ´Ù½Ã ¿Ã¶ó¿Ô´Ù¸é º® À¯Áö
-    if (bPlayerOnButton)
-    {
-        return;
-    }
+    if (!HasAuthority()) return;
+    if (bPlayerOnButton) return;
 
     if (TargetWall)
     {
