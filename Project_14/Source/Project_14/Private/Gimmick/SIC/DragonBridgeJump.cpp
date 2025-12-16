@@ -118,9 +118,7 @@ void ADragonBridgeJump::OnRep_TargetNum()
 {
 }
 
-void ADragonBridgeJump::GetLifetimeReplicatedProps(
-	TArray<FLifetimeProperty>& OutLifetimeProps
-) const
+void ADragonBridgeJump::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 

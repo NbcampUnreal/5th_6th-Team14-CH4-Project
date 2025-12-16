@@ -2,12 +2,15 @@
 
 
 #include "Gimmick/SIC/MovingBlock.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AMovingBlock::AMovingBlock()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRoot;
@@ -34,6 +37,21 @@ void AMovingBlock::BeginPlay()
 }
 void AMovingBlock::ToggleState()
 {
+	if (HasAuthority())
+	{
+		ToggleState_Internal();
+	}
+	else
+	{
+		Server_ToggleState();
+	}
+}
+void AMovingBlock::Server_ToggleState_Implementation()
+{
+	ToggleState_Internal();
+}
+void AMovingBlock::ToggleState_Internal()
+{
 	bIsExtended = !bIsExtended;
 
 	if (bIsExtended)
@@ -45,6 +63,7 @@ void AMovingBlock::ToggleState()
 void AMovingBlock::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (!HasAuthority()) return;
 
 	FVector Current = SceneRoot->GetRelativeLocation();
 	FVector NewLocation = FMath::VInterpConstantTo(Current, TargetLocation, DeltaTime, MoveSpeed);
@@ -52,3 +71,12 @@ void AMovingBlock::Tick(float DeltaTime)
 	SceneRoot->SetRelativeLocation(NewLocation);
 }
 
+
+void AMovingBlock::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AMovingBlock, StartLocation);
+	DOREPLIFETIME(AMovingBlock, TargetLocation);
+	DOREPLIFETIME(AMovingBlock, bIsExtended);
+}

@@ -12,6 +12,7 @@ class PROJECT_14_API AMovingBlock : public AActor
 	GENERATED_BODY()
 protected:
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 public:	
 
 	virtual void Tick(float DeltaTime) override;
@@ -21,20 +22,29 @@ public:
 	USceneComponent* SceneRoot;
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* BlockMesh;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bIsExtended = false;  // true = 나오는 중, false = 들어가는 중
-
-	UPROPERTY(EditAnywhere)
-	FVector StartLocation;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	FVector ExtendedOffset = FVector(300, 0, 0);
 
-	FVector TargetLocation;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MoveSpeed = 200.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated)
+	bool bIsExtended = false;  // true = 나오는 중, false = 들어가는 중
+	UPROPERTY(Replicated)
+	FVector StartLocation;
+
+	UPROPERTY(Replicated)
+	FVector TargetLocation;
+
 	UFUNCTION(BlueprintCallable)
 	void ToggleState();
+
+private:
+	UFUNCTION(Server, Reliable)
+	void Server_ToggleState();
+
+	void ToggleState_Internal();
+
+
 };
