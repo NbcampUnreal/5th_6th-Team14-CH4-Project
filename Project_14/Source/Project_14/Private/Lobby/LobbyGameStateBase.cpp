@@ -7,6 +7,7 @@ void ALobbyGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(ALobbyGameStateBase, RoomList);
+	DOREPLIFETIME(ALobbyGameStateBase, GameServerIP);
 }
 
 

@@ -10,4 +10,9 @@ start "LobbyServer" %UE_EXE% %UPROJECT% /Game/Level/LobbyLevel -server -log -por
 echo 게임 서버1 실행 (Port: 7778)...
 start "GameServer1" %UE_EXE% %UPROJECT% /Game/Level/MainLevel -server -log -port=7778
 
+echo 게임 서버2 실행 (Port: 7779)...
+start "GameServer2" %UE_EXE% %UPROJECT% /Game/Level/MainLevel -server -log -port=7779
+
+
+
 echo 모든 서버가 실행되었습니다.

@@ -7,6 +7,7 @@
 #include "GameFramework/PlayerState.h"
 #include "Lobby/LobbyGameStateBase.h"
 #include "Server/ServerTypes.h"
+#include "UI/UW_LobbyWaitingRoom.h"
 
 
 void ALobbyPlayerController::BeginPlay()
@@ -31,6 +32,31 @@ void ALobbyPlayerController::BeginPlay()
 			bShowMouseCursor = true;
 		}
 	}
+	
+}
+
+void ALobbyPlayerController::ClientRPC_ShowWaitingRoomUI_Implementation(const FRoomInfo& RoomInfo)
+{
+	if (UserWidgetInstance != nullptr)
+	{
+		UserWidgetInstance->RemoveFromParent();
+	}
+	if (WaitingRoomWidgetClass !=nullptr)
+	{
+		if (WaitingRoomWidgetInstance == nullptr)
+		{
+			WaitingRoomWidgetInstance = CreateWidget<UUW_LobbyWaitingRoom>(this, WaitingRoomWidgetClass);
+		}
+		if (WaitingRoomWidgetInstance != nullptr)
+		{
+			WaitingRoomWidgetInstance->UpdateRoomUI(RoomInfo);
+			WaitingRoomWidgetInstance->AddToViewport();
+			FInputModeUIOnly Mode;
+			Mode.SetWidgetToFocus(WaitingRoomWidgetInstance->GetCachedWidget());
+			SetInputMode(Mode);
+			bShowMouseCursor = true;
+		}
+	}
 }
 
 void ALobbyPlayerController::ClientRPC_MoveToGameServer_Implementation(const FString& ServerAddress)
@@ -49,10 +75,20 @@ void ALobbyPlayerController::Server_CreateRoom_Implementation(const FRoomInfo& N
 		FRoomInfo FinalRoomInfo = NewRoomInfo;
 		FinalRoomInfo.RoomID = GS->RoomList.Num() + 1;
 		FinalRoomInfo.HostName = PlayerState->GetPlayerName();
-		GS->AddRoom(FinalRoomInfo);
+		FinalRoomInfo.GameServerIP = TEXT("127.0.0.1");
+		FinalRoomInfo.GameServerPort = GS->RoomList.Num() + 7778;
+		
 
 		UE_LOG(LogTemp, Log, TEXT("Server: Creat Room {%s} by %s"),*FinalRoomInfo.RoomName, *FinalRoomInfo.HostName);
 
+		if (ALobbyPlayerState* PS = GetPlayerState<ALobbyPlayerState>())
+		{
+			FinalRoomInfo.MemberPlayerStates.Add(PS);
+			FinalRoomInfo.CurrentPlayers = 1;
+		}
+		GS->AddRoom(FinalRoomInfo);
+		ClientRPC_ShowWaitingRoomUI(FinalRoomInfo);
+		
 	}
 }
 
@@ -78,7 +114,7 @@ void ALobbyPlayerController::RequestCreateRoom(FString RoomName)
 
 }
 
-void ALobbyPlayerController::Server_StartGame_Implementation(int32 RoomID,const FString& GameServerIP)
+void ALobbyPlayerController::Server_StartGame_Implementation(int32 RoomID)
 {
 	ALobbyGameStateBase* GS = GetWorld()->GetGameState<ALobbyGameStateBase>();
 	if (IsValid(GS) == false)
@@ -100,7 +136,7 @@ void ALobbyPlayerController::Server_StartGame_Implementation(int32 RoomID,const 
 		{
 			return;
 		}
-		FString ConnectURL = FString::Printf(TEXT("%s:%d"),*GameServerIP,TargetRoom->GameServerPort);
+		FString ConnectURL = FString::Printf(TEXT("%s:%d"),*(TargetRoom->GameServerIP),TargetRoom->GameServerPort);
 		for (ALobbyPlayerState* MemberPS : TargetRoom->MemberPlayerStates)
 		{
 			if (MemberPS != nullptr)
@@ -116,7 +152,7 @@ void ALobbyPlayerController::Server_StartGame_Implementation(int32 RoomID,const 
 	
 }
 
-bool ALobbyPlayerController::Server_StartGame_Validate(int32 RoomID,const FString& GameServerIP)
+bool ALobbyPlayerController::Server_StartGame_Validate(int32 RoomID)
 {
 	return true;
 }
@@ -140,12 +176,14 @@ void ALobbyPlayerController::Server_JoinRoom_Implementation(int32 RoomID)
 	}
 	if (TargetRoom != nullptr && TargetRoom->CurrentPlayers < TargetRoom->MaxPlayers )
 	{
-		ALobbyPlayerState* PS = GetPlayerState<ALobbyPlayerState>();
-		TargetRoom->MemberPlayerStates.Add(PS);
-		TargetRoom->CurrentPlayers++;
-
-		//need waiting room UI client RPC
-		//ClientRPC_ShowWaitingRoomUI(TargetRoom->RoomName);
+		if (ALobbyPlayerState* PS = GetPlayerState<ALobbyPlayerState>())
+		{
+			TargetRoom->MemberPlayerStates.Add(PS);
+			TargetRoom->CurrentPlayers++;
+			ClientRPC_ShowWaitingRoomUI(*TargetRoom);	
+		}
+		
+		
 	}
 }
 
