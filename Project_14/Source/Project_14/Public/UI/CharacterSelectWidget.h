@@ -4,7 +4,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Player/PlayerCharacter.h"
-#include "GameManager/ProjectGameState.h"
+#include "GameManager/ProjectGameStateBase.h"
 #include "CharacterSelectWidget.generated.h"
 
 class UButton;

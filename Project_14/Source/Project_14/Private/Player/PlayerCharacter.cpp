@@ -35,8 +35,12 @@ APlayerCharacter::APlayerCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
 
 	bReplicates = true;
-	bAlwaysRelevant = true;
-	GetCharacterMovement()->SetIsReplicated(true);
+
+	bIsPushing = false;
+	PushSpeed = 200.f;
+	PushWeightMultiplier = 1.0f;
+	PushingActor = nullptr;
+	PushingComponent = nullptr;
 }
 
 void APlayerCharacter::BeginPlay()
@@ -47,16 +51,34 @@ void APlayerCharacter::BeginPlay()
 	{
 		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
+}
 
-	UCapsuleComponent* Capsule = GetCapsuleComponent();
-	if (Capsule)
+void APlayerCharacter::Tick(float DeltaTime)
+{
+	if (bIsPushing && HasAuthority() && PushingActor)
 	{
-		Capsule->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
-	}
+		FVector ToActor = (PushingActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+		FVector Forward = GetActorForwardVector();
 
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->bEnablePhysicsInteraction = false;
+		// 각도 차이가 90도 이상이면 밀기 중단
+		float Dot = FVector::DotProduct(Forward, ToActor);
+		if (Dot < FMath::Cos(FMath::DegreesToRadians(30.0f)))
+		{
+			StopPush();
+			return;
+		}
+
+		FVector Start = GetActorLocation();
+		FVector End = Start + Forward * 100.f;
+		FHitResult Hit;
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(this);
+
+		if (!GetWorld()->SweepSingleByChannel(Hit, Start, End, FQuat::Identity,
+			ECC_WorldDynamic, FCollisionShape::MakeCapsule(34.f, 88.f), Params))
+		{
+			StopPush();
+		}
 	}
 }
 
@@ -66,6 +88,7 @@ void APlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME(APlayerCharacter, CharacterType);
 	DOREPLIFETIME(APlayerCharacter, bIsPushing);
+	DOREPLIFETIME(APlayerCharacter, PushingActor);
 }
 
 void APlayerCharacter::OnRep_CharacterType()
@@ -120,45 +143,20 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 				);
 			}
 
-			if (PlayerController->SprintAction)
-			{
-				EnhancedInput->BindAction(
-					PlayerController->SprintAction,
-					ETriggerEvent::Triggered,
-					this,
-					&APlayerCharacter::StartSprint
-
-				);
-
-				EnhancedInput->BindAction(
-					PlayerController->SprintAction,
-					ETriggerEvent::Completed,
-					this,
-					&APlayerCharacter::StopSprint
-				);
-			}
-
 			if (PlayerController->InteractAction)
 			{
 				EnhancedInput->BindAction(
-					PlayerController->InteractAction,
-					ETriggerEvent::Triggered,
-					this,
-					&APlayerCharacter::EnablePushPhysics
+					PlayerController->InteractAction, 
+					ETriggerEvent::Triggered, 
+					this, 
+					&APlayerCharacter::StartPush
 				);
 
 				EnhancedInput->BindAction(
 					PlayerController->InteractAction,
-					ETriggerEvent::Completed,
-					this,
-					&APlayerCharacter::DisablePushPhysics
-				);
-
-				EnhancedInput->BindAction(
-					PlayerController->InteractAction,
-					ETriggerEvent::Ongoing,
-					this,
-					&APlayerCharacter::PushObject
+					ETriggerEvent::Completed, 
+					this, 
+					&APlayerCharacter::StopPush
 				);
 			}
 
@@ -186,12 +184,92 @@ void APlayerCharacter::Move(const FInputActionValue& value)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		FVector Forward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		FVector Right = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-		AddMovementInput(ForwardDirection, MoveInput.X);
-		AddMovementInput(RightDirection, MoveInput.Y);
+		FVector MoveDir = Forward * MoveInput.X + Right * MoveInput.Y;
+
+		AddMovementInput(Forward, MoveInput.X);
+		AddMovementInput(Right, MoveInput.Y);
+
+		if (bIsPushing && PushingActor)
+		{
+			Server_MovePushingActor(MoveInput);
+		}
 	}
+}
+
+void APlayerCharacter::Server_MovePushingActor_Implementation(FVector2D MoveInput)
+{
+	MovePushingActor(MoveInput);
+}
+
+void APlayerCharacter::MovePushingActor(const FVector2D& MoveInput)
+{
+	if (!HasAuthority() || !PushingActor) return;
+
+	FRotator YawRot(0, Controller->GetControlRotation().Yaw, 0);
+	FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
+	FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
+	FVector Dir = (Forward * MoveInput.X + Right * MoveInput.Y).GetSafeNormal();
+
+	FVector DeltaMove = Dir * PushSpeed * PushWeightMultiplier * GetWorld()->GetDeltaSeconds();
+	PushingActor->AddActorWorldOffset(DeltaMove, true);
+	PushingActor->ForceNetUpdate();
+
+	DrawDebugSphere(GetWorld(), PushingActor->GetActorLocation(), 30.f, 8, FColor::Red, false, 0.1f);
+}
+
+void APlayerCharacter::StartPush()
+{
+	if (CharacterType != ECharacterType::StrongPush) return;
+
+	if (!HasAuthority())
+	{
+		ServerStartPush();
+		return;
+	}
+
+	FVector Start = GetActorLocation();
+	FVector End = Start + GetActorForwardVector() * 100.f;
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	if (GetWorld()->SweepSingleByChannel(Hit, Start, End, FQuat::Identity, ECC_WorldDynamic, FCollisionShape::MakeCapsule(34.f, 88.f), Params))
+	{
+		PushingActor = Hit.GetActor();
+		PushingComponent = Hit.GetComponent();
+
+		if (PushingActor)
+		{
+			bIsPushing = true;
+			GetCharacterMovement()->MaxWalkSpeed = NormalSpeed / 3.f;
+		}
+	}
+}
+
+void APlayerCharacter::StopPush()
+{
+	if (!HasAuthority())
+	{
+		ServerStopPush();
+		return;
+	}
+
+	bIsPushing = false;
+	PushingActor = nullptr;
+	PushingComponent = nullptr;
+	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
+}
+
+void APlayerCharacter::ServerStartPush_Implementation() 
+{ 
+	StartPush(); 
+}
+void APlayerCharacter::ServerStopPush_Implementation() 
+{ 
+	StopPush(); 
 }
 
 void APlayerCharacter::StartJump(const FInputActionValue& value)
@@ -233,124 +311,4 @@ void APlayerCharacter::MouseInput(const FInputActionValue& value)
 
 }
 
-void APlayerCharacter::StartSprint(const FInputActionValue& value)
-{
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
-	}
-}
 
-void APlayerCharacter::StopSprint(const FInputActionValue& value)
-{
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
-	}
-}
-
-void APlayerCharacter::EnablePushPhysics()
-{
-	if (CharacterType != ECharacterType::StrongPush)
-	{
-		return;
-	}
-
-	if (!HasAuthority())
-	{
-		Server_EnablePush();
-		return;
-	}
-
-	bIsPushing = true;
-	GetCharacterMovement()->bEnablePhysicsInteraction = true;
-	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed / 3.f;
-}
-
-void APlayerCharacter::DisablePushPhysics()
-{
-	if (CharacterType != ECharacterType::StrongPush) return;
-
-	if (!HasAuthority())
-	{
-		Server_DisablePush();
-		return;
-	}
-
-	// 서버 전용 로직
-	bIsPushing = false;
-	GetCharacterMovement()->bEnablePhysicsInteraction = false;
-	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
-}
-
-void APlayerCharacter::PushObject(const FInputActionValue& value)
-{
-
-	if (!HasAuthority() && bIsPushing)
-	{
-		Server_PushObject();
-	}
-}
-
-void APlayerCharacter::ApplyPushToHit(const FHitResult& Hit)
-{
-	UPrimitiveComponent* HitComp = Hit.GetComponent();
-	if (HitComp && HitComp->IsSimulatingPhysics())
-	{
-		FVector ForceDir = CameraComp->GetForwardVector();
-		ForceDir.Normalize();
-
-		float FinalPush = PushPower;
-
-		HitComp->AddForce(ForceDir * FinalPush, NAME_None, true);
-	}
-}
-
-void APlayerCharacter::Server_PushObject_Implementation()
-{
-	if (CharacterType != ECharacterType::StrongPush) return;
-
-	FVector Start = CameraComp->GetComponentLocation();
-	FVector End = Start + CameraComp->GetForwardVector() * PushDistance;
-
-	FHitResult HitResult;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
-
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
-		HitResult,
-		Start,
-		End,
-		ECC_PhysicsBody,
-		Params
-	);
-
-	// 디버그 라인 (필요하면 활성화)
-	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 0.02f, 0, 1.0f);
-
-	if (bHit && HitResult.GetComponent()->IsSimulatingPhysics())
-	{
-		ApplyPushToHit(HitResult);
-		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed / 2;
-		bIsPushing = true; 
-	}
-	else
-	{
-		bIsPushing = false; 
-		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
-	}
-}
-
-void APlayerCharacter::Server_DisablePush_Implementation()
-{
-	bIsPushing = false;
-	GetCharacterMovement()->bEnablePhysicsInteraction = false;
-	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
-}
-
-void APlayerCharacter::Server_EnablePush_Implementation()
-{
-	bIsPushing = true;
-	GetCharacterMovement()->bEnablePhysicsInteraction = true;
-	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed / 3.f;
-}

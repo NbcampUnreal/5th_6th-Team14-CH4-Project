@@ -1,23 +1,23 @@
 ﻿#include "GameManager/ProjectGameModeBase.h"
 #include "Player/PlayerCharacter.h"
 #include "Player/PlayerCtr.h"
-#include "GameManager/ProjectGameState.h"
+#include "GameManager/ProjectGameStateBase.h"
 
 AProjectGameModeBase::AProjectGameModeBase()
 {
     DefaultPawnClass = nullptr;
 	PlayerControllerClass = APlayerCtr::StaticClass();
-    //GameStateClass = AProjectGameState::StaticClass();
+    GameStateClass = AProjectGameStateBase::StaticClass();
 }
 
 void AProjectGameModeBase::SpawnSelectedCharacter(APlayerController* PC, ECharacterType Type)
 {
-    if (!PC || !PlayerCharacterClass)
+    if (!PC)
     {
         return;
     }
 
-   /* AProjectGameState* GS = GetGameState<AProjectGameState>();
+    AProjectGameStateBase* GS = GetGameState<AProjectGameStateBase>();
     if (!GS)
     {
         return;
@@ -27,7 +27,7 @@ void AProjectGameModeBase::SpawnSelectedCharacter(APlayerController* PC, ECharac
     {
         return;
     }
-    GS->AddSelectedType(Type);*/
+    GS->AddSelectedType(Type);
 
     AActor* Start = FindPlayerStart(PC);
     if (!Start) return;
@@ -36,12 +36,26 @@ void AProjectGameModeBase::SpawnSelectedCharacter(APlayerController* PC, ECharac
     Params.Owner = PC;
     Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-    APlayerCharacter* NewChar =GetWorld()->SpawnActor<APlayerCharacter>(PlayerCharacterClass, Start->GetActorTransform(),Params);
+    TSubclassOf<APlayerCharacter> CharacterToSpawn = nullptr;
+    switch (Type)
+    {
+    case ECharacterType::StrongPush:
+        CharacterToSpawn = StrongPushCharacterBP;
+        break;
+    case ECharacterType::WeakJump:
+        CharacterToSpawn = JumpCharacterBP;
+        break;
+    default:
+        break;
+    }
 
-    if (!NewChar)
+    if (!CharacterToSpawn)
     {
         return;
     }
+
+    APlayerCharacter* NewChar = GetWorld()->SpawnActor<APlayerCharacter>(
+        CharacterToSpawn, Start->GetActorTransform(), Params);
 
     PC->Possess(NewChar);
     NewChar->CharacterType = Type;
