@@ -35,7 +35,7 @@ public:
 	ECharacterType CharacterType;
 
 	virtual void BeginPlay() override;
-
+	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UFUNCTION()
@@ -44,8 +44,8 @@ public:
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	UFUNCTION()
-	void Move(const FInputActionValue& value);
+	UFUNCTION(BlueprintCallable)
+	void Move(const FInputActionValue& Value);
 	UFUNCTION()
 	void StartJump(const FInputActionValue& value);
 	UFUNCTION()
@@ -54,40 +54,36 @@ protected:
 	void Look(const FInputActionValue& value);
 	UFUNCTION()
 	void MouseInput(const FInputActionValue& value);
-	UFUNCTION()
-	void PushObject(const FInputActionValue& value);
 
-	UFUNCTION(BlueprintCallable, Category = "Sprint")
-	void StartSprint(const FInputActionValue& value);
-	UFUNCTION(BlueprintCallable, Category = "Sprint")
-	void StopSprint(const FInputActionValue& value);
-
-	void EnablePushPhysics();
-	void DisablePushPhysics();
-	void ApplyPushToHit(const FHitResult& Hit);
+	void StartPush();
+	void StopPush();
 
 	UFUNCTION(Server, Reliable)
-	void Server_EnablePush();
+	void ServerStartPush();
+	UFUNCTION(Server, Reliable)
+	void ServerStopPush();
 
 	UFUNCTION(Server, Reliable)
-	void Server_DisablePush();
+	void Server_MovePushingActor(FVector2D MoveInput);
 
-	UFUNCTION(Server, Reliable)
-	void Server_PushObject();
-
+	void MovePushingActor(const FVector2D& MoveInput);
 	UPROPERTY(Replicated, BlueprintReadWrite, Category = "Animation")
 	bool bIsPushing = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Push")
-	float PushDistance = 200.0f;
+	UPROPERTY(Replicated, BlueprintReadWrite, Category = "Push")
+	AActor* PushingActor;
+
+	UPROPERTY()
+	UPrimitiveComponent* PushingComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Push")
-	float PushPower = 1500.0f;
+	float PushSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Push")
+	float PushWeightMultiplier;
 
 private:
 	float NormalSpeed;
 	float SprintSpeedMultiplier;
 	float SprintSpeed;
-
-	
 };

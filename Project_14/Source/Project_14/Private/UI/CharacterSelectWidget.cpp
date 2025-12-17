@@ -10,7 +10,7 @@ void UCharacterSelectWidget::NativeConstruct()
     if (Button_WeakJump) Button_WeakJump->OnClicked.AddDynamic(this, &UCharacterSelectWidget::OnWeakJumpClicked);
     if (Button_StrongPush) Button_StrongPush->OnClicked.AddDynamic(this, &UCharacterSelectWidget::OnStrongPushClicked);
 
-    if (AProjectGameState* GS = GetWorld()->GetGameState<AProjectGameState>())
+    if (AProjectGameStateBase* GS = GetWorld()->GetGameState<AProjectGameStateBase>())
     {
         GS->OnCharacterTypeSelected.AddDynamic(this, &UCharacterSelectWidget::UpdateCharacterButtons);
     }
@@ -20,7 +20,7 @@ void UCharacterSelectWidget::NativeConstruct()
 
 void UCharacterSelectWidget::UpdateCharacterButtons()
 {
-    if (AProjectGameState* GS = GetWorld()->GetGameState<AProjectGameState>())
+    if (AProjectGameStateBase* GS = GetWorld()->GetGameState<AProjectGameStateBase>())
     {
         if (!IsInViewport()) return;
 

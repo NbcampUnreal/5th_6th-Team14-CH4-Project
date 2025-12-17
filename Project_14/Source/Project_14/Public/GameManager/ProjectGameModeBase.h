@@ -16,8 +16,11 @@ class PROJECT_14_API AProjectGameModeBase : public AGameModeBase
 	AProjectGameModeBase();
 		
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "Player")
-	TSubclassOf<APlayerCharacter> PlayerCharacterClass;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
+	TSubclassOf<APlayerCharacter> StrongPushCharacterBP;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
+	TSubclassOf<APlayerCharacter> JumpCharacterBP;
 
 	UFUNCTION(BlueprintCallable)
 	void SpawnSelectedCharacter(APlayerController* PC, ECharacterType Type);

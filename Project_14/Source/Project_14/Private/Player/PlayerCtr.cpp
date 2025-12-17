@@ -8,7 +8,6 @@ APlayerCtr::APlayerCtr()
 	MoveAction(nullptr),
 	JumpAction(nullptr),
 	LookAction(nullptr),
-	SprintAction(nullptr),
 	MouseInteractAction(nullptr)
 {
 }
