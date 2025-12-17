@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "Server/ServerTypes.h"
+#include "UI/UW_LobbyWaitingRoom.h"
 #include "LobbyPlayerController.generated.h"
 
 /**
@@ -15,26 +16,46 @@ class PROJECT_14_API ALobbyPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
-	public:
+public:
 	virtual void BeginPlay() override;
+
+
+	//Client RPC
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_MoveToGameServer(const FString& ServerAddress);
 
+	UFUNCTION(Client, Reliable)
+	void ClientRPC_ShowWaitingRoomUI(const FRoomInfo& RoomInfo);
+
+
+	//Server RPC
 	UFUNCTION(Server, Reliable,WithValidation)
 	void Server_CreateRoom(const FRoomInfo& NewRoomInfo);
-	void RequestCreateRoom(FString RoomName);
-
+	
 	UFUNCTION(Server,Reliable,WithValidation)
 	void Server_JoinRoom(int32 RoomID);
-
+	
 	UFUNCTION(Server,Reliable,WithValidation)
-	void Server_StartGame(int32 RoomID,const FString& GameServerIP);
+	void Server_StartGame(int32 RoomID);
 
-private:
+	void RequestCreateRoom(FString RoomName);
+
+protected:
+
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Lobby UI", meta = (AllowPrivateAccess))
 	TSubclassOf<UUserWidget> UserWidgetClass;
+	
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Lobby UI", meta = (AllowPrivateAccess))
+	TSubclassOf<UUW_LobbyWaitingRoom> WaitingRoomWidgetClass;
+
+	
+private:
+	
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Lobby UI", meta = (AllowPrivateAccess))
 	TObjectPtr<UUserWidget> UserWidgetInstance;
-	
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Lobby UI", meta = (AllowPrivateAccess))
+	TObjectPtr<UUW_LobbyWaitingRoom> WaitingRoomWidgetInstance;
+
 };

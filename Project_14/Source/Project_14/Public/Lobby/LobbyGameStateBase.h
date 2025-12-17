@@ -19,6 +19,9 @@ public:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Room")
 	TArray<FRoomInfo> RoomList;
 
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Room")
+	FString GameServerIP;
+
 	void AddRoom(FRoomInfo NewRoom);
 	
 };

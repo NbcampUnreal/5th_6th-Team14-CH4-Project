@@ -33,6 +33,9 @@ public:
 	int32 MaxPlayers = 2;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room Info")
+	FString GameServerIP = TEXT("127.0.0.1");
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room Info")
 	int32 GameServerPort = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room Info")
