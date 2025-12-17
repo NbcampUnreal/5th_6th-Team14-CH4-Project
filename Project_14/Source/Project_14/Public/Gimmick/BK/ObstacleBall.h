@@ -20,7 +20,27 @@ protected:
     UFUNCTION()
     void EnablePhysics();
 
+    UFUNCTION()
+    void OnHit(
+        UPrimitiveComponent* HitComp,
+        AActor* OtherActor,
+        UPrimitiveComponent* OtherComp,
+        FVector NormalImpulse,
+        const FHitResult& Hit
+    );
+
 protected:
     UPROPERTY(VisibleAnywhere)
     UStaticMeshComponent* Mesh;
+
+    UPROPERTY(EditAnywhere, Category = "Physics")
+    float NormalMass = 10000.f;
+
+    UPROPERTY(EditAnywhere, Category = "Physics")
+    float PushableMass = 300.f;
+
+    UPROPERTY(EditAnywhere, Category = "Physics")
+    float PushImpulseThreshold = 50000.f;
+
+    FTimerHandle ResetMassTimer;
 };
