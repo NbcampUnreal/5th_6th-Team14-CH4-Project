@@ -32,6 +32,7 @@ void ALobbyPlayerController::BeginPlay()
 			bShowMouseCursor = true;
 		}
 	}
+	
 }
 
 void ALobbyPlayerController::ClientRPC_ShowWaitingRoomUI_Implementation(const FRoomInfo& RoomInfo)

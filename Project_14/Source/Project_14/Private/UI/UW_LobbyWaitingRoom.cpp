@@ -6,6 +6,7 @@
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Lobby/LobbyGameStateBase.h"
 #include "Lobby/LobbyPlayerController.h"
 #include "Server/ServerTypes.h"
@@ -61,7 +62,18 @@ void UUW_LobbyWaitingRoom::UpdateRoomUI(const FRoomInfo& Info)
 			{
 				UTextBlock* NewText = NewObject<UTextBlock>(this);
 				NewText->SetText(FText::FromString(PS->GetPlayerName()));
-				NewText->SetJustification(ETextJustify::Center);
+				FSlateFontInfo FontInfo = NewText->GetFont();
+				FontInfo.Size = 24.0f;
+				NewText->SetFont(FontInfo);
+
+				UPanelSlot* PanelSlot = PlayerListVBox->AddChild(NewText);
+				if (UVerticalBoxSlot* VSlot = Cast<UVerticalBoxSlot>(PanelSlot))
+				{
+					VSlot->SetPadding(FMargin(0.0f, 50.0f));
+					VSlot->SetHorizontalAlignment(HAlign_Center);
+					VSlot->SetVerticalAlignment(VAlign_Center);
+					VSlot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
+				}
 			}
 		}
 	}
