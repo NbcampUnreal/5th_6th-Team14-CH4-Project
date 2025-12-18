@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -25,11 +25,13 @@ protected:
     UPROPERTY(VisibleAnywhere, Category = "Components")
     UBoxComponent* Trigger;
 
-    // ·¹º§¿¡¼­ ¹öÆ° ¾×ÅÍ ÁöÁ¤(¼­¹ö°¡ ÀÌ°É·Î LockFloor È£Ãâ)
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Link")
+    // âœ… ë ˆë²¨(ì¸ìŠ¤í„´ìŠ¤)ì—ì„œ ë²„íŠ¼ ì•¡í„°ë¥¼ ì§ì ‘ ì°ì„ ìˆ˜ ìˆê²Œ í•˜ëŠ” í•µì‹¬ ì„¤ì •
+    //    - íƒ€ì…: ATimerFloorButton*  (í´ë˜ìŠ¤ê°€ ì•„ë‹ˆë¼ "ì›”ë“œì— ìˆëŠ” ì•¡í„° ì°¸ì¡°")
+    //    - EditInstanceOnly: ë ˆë²¨ì— ë°°ì¹˜í•œ í›„ ë””í…Œì¼ì—ì„œ ì„ íƒ ê°€ëŠ¥
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Link", meta = (DisplayName = "Button Ref"))
     ATimerFloorButton* ButtonRef = nullptr;
 
-    // Å¥ºê/¹ÙÀ§¿¡ Rock ÅÂ±× ´Ş±â
+    // íë¸Œ/ë°”ìœ„ì— Rock íƒœê·¸ ë‹¬ê¸°
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rule")
     FName RequiredTag = "Rock";
 

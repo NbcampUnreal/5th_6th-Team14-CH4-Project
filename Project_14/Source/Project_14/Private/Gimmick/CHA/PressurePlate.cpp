@@ -44,5 +44,5 @@ void APressurePlate::OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor*
     if (!RequiredTag.IsNone() && !OtherActor->ActorHasTag(RequiredTag))
         return;
 
-    ButtonRef->LockFloor(); // 서버에서 Lock → 멀티캐스트로 바닥 고정 반영됨
+    ButtonRef->LockFloor();
 }
