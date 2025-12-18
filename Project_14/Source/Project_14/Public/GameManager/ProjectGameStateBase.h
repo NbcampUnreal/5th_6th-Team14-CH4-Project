@@ -15,6 +15,7 @@ class PROJECT_14_API AProjectGameStateBase : public AGameStateBase
 	
     AProjectGameStateBase();
 public:
+    virtual void Tick(float DeltaTime) override;
 
     UPROPERTY(ReplicatedUsing = OnRep_SelectedTypes)
     TArray<ECharacterType> SelectedCharacterTypes;
@@ -23,6 +24,9 @@ public:
 
     UPROPERTY(BlueprintAssignable)
     FOnCharacterTypeSelected OnCharacterTypeSelected;
+
+    UPROPERTY(BlueprintReadOnly, Replicated)
+    float PlayTime = 0.f;
 
 protected:
 

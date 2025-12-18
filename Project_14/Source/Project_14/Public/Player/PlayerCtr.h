@@ -43,6 +43,33 @@ public:
 	UFUNCTION(Client, Reliable, BlueprintCallable)
 	void Client_SetGameInputMode();
 
+	UPROPERTY(EditDefaultsOnly, Category = "UI Preview")
+	TSubclassOf<AActor> PreviewCharacterA;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Preview")
+	TSubclassOf<AActor> PreviewCharacterB;
+
+	UPROPERTY()
+	AActor* PreviewA;
+
+	UPROPERTY()
+	AActor* PreviewB;
+
+	UFUNCTION(BlueprintCallable)
+	void DestroyAllPreviewCharacters();
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UInGameHUDWidget> InGameHUDClass;
+
+	UPROPERTY()
+	UInGameHUDWidget* InGameHUD;
+
+	UFUNCTION(BlueprintCallable)
+	void CreateInGameHUD();
+
+	UFUNCTION(BlueprintCallable)
+	void RemoveInGameHUD();
+
 protected:
 	virtual void BeginPlay() override;
 

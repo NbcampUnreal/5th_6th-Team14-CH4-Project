@@ -3,8 +3,15 @@
 
 AProjectGameStateBase::AProjectGameStateBase()
 {
+    PrimaryActorTick.bCanEverTick = true;
     bReplicates = true;
     SelectedCharacterTypes.Empty();
+}
+
+void AProjectGameStateBase::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    PlayTime += DeltaSeconds;
 }
 
 void AProjectGameStateBase::AddSelectedType(ECharacterType Type)
@@ -28,4 +35,5 @@ void AProjectGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
     DOREPLIFETIME(AProjectGameStateBase, SelectedCharacterTypes);
+    DOREPLIFETIME(AProjectGameStateBase, PlayTime);
 }
