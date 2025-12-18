@@ -60,7 +60,6 @@ void APlayerCharacter::Tick(float DeltaTime)
 		FVector ToActor = (PushingActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
 		FVector Forward = GetActorForwardVector();
 
-		// 각도 차이가 90도 이상이면 밀기 중단
 		float Dot = FVector::DotProduct(Forward, ToActor);
 		if (Dot < FMath::Cos(FMath::DegreesToRadians(30.0f)))
 		{
@@ -75,7 +74,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 		Params.AddIgnoredActor(this);
 
 		if (!GetWorld()->SweepSingleByChannel(Hit, Start, End, FQuat::Identity,
-			ECC_WorldDynamic, FCollisionShape::MakeCapsule(34.f, 88.f), Params))
+			ECC_WorldDynamic, FCollisionShape::MakeCapsule(28.f, 88.f), Params))
 		{
 			StopPush();
 		}

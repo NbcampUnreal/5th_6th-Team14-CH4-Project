@@ -38,6 +38,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	UPROPERTY(Replicated, BlueprintReadWrite, Category = "Animation")
+	bool bIsPushing = false;
+
 	UFUNCTION()
 	void OnRep_CharacterType();
 
@@ -67,8 +70,6 @@ protected:
 	void Server_MovePushingActor(FVector2D MoveInput);
 
 	void MovePushingActor(const FVector2D& MoveInput);
-	UPROPERTY(Replicated, BlueprintReadWrite, Category = "Animation")
-	bool bIsPushing = false;
 
 	UPROPERTY(Replicated, BlueprintReadWrite, Category = "Push")
 	AActor* PushingActor;
