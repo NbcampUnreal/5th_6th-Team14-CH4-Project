@@ -40,14 +40,7 @@ void AStopBallSpawnButton::OnOverlapBegin(
 	if (!OtherActor || !OtherActor->IsA<ACharacter>())
 		return;
 
-	if (HasAuthority())
-	{
-		ServerPress();
-	}
-	else
-	{
-		ServerPress(); 
-	}
+	ServerPress();
 }
 
 void AStopBallSpawnButton::OnOverlapEnd(
@@ -59,44 +52,44 @@ void AStopBallSpawnButton::OnOverlapEnd(
 	if (!OtherActor || !OtherActor->IsA<ACharacter>())
 		return;
 
-	if (HasAuthority())
-	{
-		ServerRelease();
-	}
-	else
-	{
-		ServerRelease(); 
-	}
+	ServerRelease();
 }
 
 void AStopBallSpawnButton::ServerPress_Implementation()
 {
-	if (!TargetSpawner)
-		return;
-
 	if (bIsPressed)
 		return;
 
 	bIsPressed = true;
-	TargetSpawner->StopSpawn();
+
+	for (ABallSpawner* Spawner : TargetSpawners)
+	{
+		if (Spawner)
+		{
+			Spawner->StopSpawn();
+		}
+	}
 
 	OnRep_ButtonState();
 }
 
 void AStopBallSpawnButton::ServerRelease_Implementation()
 {
-	if (!TargetSpawner)
-		return;
-
 	bIsPressed = false;
-	TargetSpawner->StartSpawn();
+
+	for (ABallSpawner* Spawner : TargetSpawners)
+	{
+		if (Spawner)
+		{
+			Spawner->StartSpawn();
+		}
+	}
 
 	OnRep_ButtonState();
 }
 
 void AStopBallSpawnButton::OnRep_ButtonState()
 {
-	// 버튼 눌림 애니메이션 / 머티리얼 / 사운드용
 }
 
 void AStopBallSpawnButton::GetLifetimeReplicatedProps(
