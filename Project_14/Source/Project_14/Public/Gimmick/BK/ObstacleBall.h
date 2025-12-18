@@ -37,10 +37,8 @@ protected:
     float NormalMass = 10000.f;
 
     UPROPERTY(EditAnywhere, Category = "Physics")
-    float PushableMass = 300.f;
+    float WeakJumpBounceStrength = 900.f;
 
     UPROPERTY(EditAnywhere, Category = "Physics")
-    float PushImpulseThreshold = 50000.f;
-
-    FTimerHandle ResetMassTimer;
+    float StrongPushBounceStrength = 250.f;
 };

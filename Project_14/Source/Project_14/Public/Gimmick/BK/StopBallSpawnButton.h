@@ -35,7 +35,7 @@ protected:
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex);
 
-    UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable)
 	void ServerPress();
 
 	UFUNCTION(Server, Reliable)
@@ -49,7 +49,7 @@ protected:
 	UBoxComponent* TriggerBox;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Spawner")
-	ABallSpawner* TargetSpawner;
+	TArray<ABallSpawner*> TargetSpawners;
 
 	UPROPERTY(ReplicatedUsing = OnRep_ButtonState)
 	bool bIsPressed = false;

@@ -2,6 +2,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Player/PlayerCharacter.h"
 
 AObstacleBall::AObstacleBall()
 {
@@ -39,10 +42,11 @@ void AObstacleBall::BeginPlay()
 
 void AObstacleBall::EnablePhysics()
 {
-    Mesh->SetSimulatePhysics(true);
+    if (!HasAuthority())
+        return;
 
-    Mesh->SetMassOverrideInKg(NAME_None, NormalMass, true);
-    Mesh->WakeAllRigidBodies();
+    Mesh->SetSimulatePhysics(true);
+    Mesh->SetMassOverrideInKg(NAME_None, NormalMass);
 }
 
 void AObstacleBall::OnHit(
@@ -56,23 +60,36 @@ void AObstacleBall::OnHit(
     if (!HasAuthority())
         return;
 
-    if (NormalImpulse.Size() > PushImpulseThreshold)
-    {
-        Mesh->SetMassOverrideInKg(NAME_None, PushableMass, true);
+    if (!OtherActor)
+        return;
 
-        GetWorldTimerManager().ClearTimer(ResetMassTimer);
-        GetWorldTimerManager().SetTimer(
-            ResetMassTimer,
-            [this]()
-            {
-                if (Mesh)
-                {
-                    Mesh->SetMassOverrideInKg(NAME_None, NormalMass, true);
-                }
-            },
-            0.4f,
-            false
-        );
+    APlayerCharacter* Player = Cast<APlayerCharacter>(OtherActor);
+    if (!Player)
+        return;
+
+    float BounceStrength = 0.f;
+
+    switch (Player->CharacterType)
+    {
+    case ECharacterType::WeakJump:
+        BounceStrength = WeakJumpBounceStrength;
+        break;
+
+    case ECharacterType::StrongPush:
+        BounceStrength = StrongPushBounceStrength;
+        break;
+
+    default:
+        return;
     }
 
+    FVector BackwardDir = -Player->GetActorForwardVector();
+    BackwardDir.Z = 0.4f;
+    BackwardDir.Normalize();
+
+    Player->LaunchCharacter(
+        BackwardDir * BounceStrength,
+        true,  
+        true    
+    );
 }
