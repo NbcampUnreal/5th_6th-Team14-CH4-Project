@@ -5,6 +5,7 @@
 
 #include "Components/Button.h"
 #include "Components/EditableText.h"
+#include "GameManager/ProjectGameInstance.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Title/TitlePlayerController.h"
 
@@ -21,6 +22,16 @@ void UUW_TitleLayout::NativeConstruct()
 
 void UUW_TitleLayout::OnPlayButtonClicked()
 {
+	FString InputName = PlayerNameEditableText->GetText().ToString();
+	if (InputName.IsEmpty())
+	{
+		return;
+	}
+	UProjectGameInstance* GI = Cast<UProjectGameInstance>(GetGameInstance());
+	if (GI != nullptr)
+	{
+		GI->PlayerName = InputName;
+	}
 	ATitlePlayerController* PlayerController = GetOwningPlayer<ATitlePlayerController>();
 	if (IsValid(PlayerController) == true)
 	{

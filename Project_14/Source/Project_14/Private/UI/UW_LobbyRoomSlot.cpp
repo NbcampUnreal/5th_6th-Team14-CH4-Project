@@ -13,6 +13,7 @@ void UUW_LobbyRoomSlot::NativeConstruct()
 
 	if (JoinButton != nullptr)
 	{
+		JoinButton->OnClicked.RemoveDynamic(this, &UUW_LobbyRoomSlot::OnJoinButtonClicked);
 		JoinButton->OnClicked.AddDynamic(this, &UUW_LobbyRoomSlot::OnJoinButtonClicked);
 		
 	}

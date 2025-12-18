@@ -16,10 +16,12 @@ void UUW_LobbyLayout::NativeConstruct()
 
 	if (CreateRoomButton != nullptr)
 	{
+		CreateRoomButton->OnClicked.RemoveDynamic(this, &UUW_LobbyLayout::OnCreateButtonClicked);
 		CreateRoomButton->OnClicked.AddDynamic(this, &UUW_LobbyLayout::OnCreateButtonClicked);
 	}
 	if (RefreshButton != nullptr)
 	{
+		RefreshButton->OnClicked.RemoveDynamic(this, &UUW_LobbyLayout::OnRefreshButtonClicked);
 		RefreshButton->OnClicked.AddDynamic(this, &UUW_LobbyLayout::OnRefreshButtonClicked);
 	}
 }
