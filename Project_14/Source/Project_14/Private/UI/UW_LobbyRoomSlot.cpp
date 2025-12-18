@@ -11,6 +11,13 @@ void UUW_LobbyRoomSlot::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	
+}
+
+void UUW_LobbyRoomSlot::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
 	if (JoinButton != nullptr)
 	{
 		JoinButton->OnClicked.AddDynamic(this, &UUW_LobbyRoomSlot::OnJoinButtonClicked);

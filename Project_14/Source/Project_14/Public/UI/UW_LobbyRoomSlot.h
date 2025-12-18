@@ -20,6 +20,7 @@ class PROJECT_14_API UUW_LobbyRoomSlot : public UUserWidget
 
 	public:
 	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
 
 	void SetRoomInfo(const FRoomInfo& Info);
 

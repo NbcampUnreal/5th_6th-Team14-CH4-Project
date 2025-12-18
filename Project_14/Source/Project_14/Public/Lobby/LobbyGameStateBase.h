@@ -7,6 +7,8 @@
 #include "Server/ServerTypes.h"
 #include "LobbyGameStateBase.generated.h"
 
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRoomListUpdated);
 /**
  * 
  */
@@ -16,12 +18,19 @@ class PROJECT_14_API ALobbyGameStateBase : public AGameStateBase
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Room")
+	UPROPERTY(ReplicatedUsing = OnRep_RoomList, BlueprintReadOnly, Category = "Room")
 	TArray<FRoomInfo> RoomList;
 
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Room")
-	FString GameServerIP;
+	/*UPROPERTY(Replicated, BlueprintReadOnly, Category = "Room")
+	FString GameServerIP;*/
+
+	UPROPERTY(BlueprintAssignable)
+	FOnRoomListUpdated OnRoomListUpdated;
 
 	void AddRoom(FRoomInfo NewRoom);
+
+protected:
+	UFUNCTION()
+	void OnRep_RoomList();
 	
 };

@@ -8,6 +8,7 @@
 #include "UI/UW_LobbyWaitingRoom.h"
 #include "LobbyPlayerController.generated.h"
 
+class UUW_LobbyLayout;
 /**
  * 
  */
@@ -27,6 +28,8 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_ShowWaitingRoomUI(const FRoomInfo& RoomInfo);
 
+	UFUNCTION(Client, Reliable)
+	void ClientRPC_ShowLobbyUI();
 
 	//Server RPC
 	UFUNCTION(Server, Reliable,WithValidation)
@@ -38,12 +41,20 @@ public:
 	UFUNCTION(Server,Reliable,WithValidation)
 	void Server_StartGame(int32 RoomID);
 
+	UFUNCTION(Server,Reliable,WithValidation)
+	void Server_SetPlayerName(const FString& Name);
+
+	UFUNCTION(Server,Reliable,WithValidation)
+	void Server_LeaveRoom(int32 RoomID);	
+	
+	
+	//etc
 	void RequestCreateRoom(FString RoomName);
 
 protected:
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Lobby UI", meta = (AllowPrivateAccess))
-	TSubclassOf<UUserWidget> UserWidgetClass;
+	TSubclassOf<UUW_LobbyLayout> UserWidgetClass;
 	
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Lobby UI", meta = (AllowPrivateAccess))
 	TSubclassOf<UUW_LobbyWaitingRoom> WaitingRoomWidgetClass;
@@ -53,7 +64,7 @@ private:
 	
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Lobby UI", meta = (AllowPrivateAccess))
-	TObjectPtr<UUserWidget> UserWidgetInstance;
+	TObjectPtr<UUW_LobbyLayout> UserWidgetInstance;
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Lobby UI", meta = (AllowPrivateAccess))
 	TObjectPtr<UUW_LobbyWaitingRoom> WaitingRoomWidgetInstance;
