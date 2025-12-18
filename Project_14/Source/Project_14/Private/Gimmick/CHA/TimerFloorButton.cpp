@@ -2,10 +2,11 @@
 
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
-#include "TimerManager.h"
-#include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "Net/UnrealNetwork.h"
+#include "Engine/World.h"
+
+#include "Gimmick/CHA/TreapTile.h"   // ✅ TreapTile 연결
 
 ATimerFloorButton::ATimerFloorButton()
 {
@@ -30,16 +31,22 @@ void ATimerFloorButton::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ✅ 오버랩은 서버에서만 처리(멀티 중복/오작동 방지)
+    // ✅ 오버랩은 서버에서만 처리
     if (HasAuthority())
     {
         Trigger->OnComponentBeginOverlap.AddDynamic(this, &ATimerFloorButton::OnBeginOverlap);
+
+        // 시작은 OFF (원하는 시작 상태가 있으면 ResetPuzzle로 제어)
+        MulticastSetFloorActive(false);
+        ApplyTreapTiles_Server(false);
     }
 }
 
 void ATimerFloorButton::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(ATimerFloorButton, TargetFloor);
     DOREPLIFETIME(ATimerFloorButton, bLocked);
     DOREPLIFETIME(ATimerFloorButton, bPressed);
 }
@@ -49,10 +56,22 @@ void ATimerFloorButton::OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AAct
     bool bFromSweep, const FHitResult& SweepResult)
 {
     if (!HasAuthority() || !OtherActor) return;
-
     if (!Cast<APawn>(OtherActor)) return;
 
-    PressButton(); // 서버에서만 실행됨
+    PressButton();
+}
+
+void ATimerFloorButton::ApplyTreapTiles_Server(bool bActive)
+{
+    if (!HasAuthority()) return;
+
+    for (ATreapTile* Tile : TreapTiles)
+    {
+        if (IsValid(Tile))
+        {
+            Tile->ServerSetSystemActive(bActive);
+        }
+    }
 }
 
 void ATimerFloorButton::PressButton()
@@ -60,14 +79,15 @@ void ATimerFloorButton::PressButton()
     if (!HasAuthority()) return;
     if (!TargetFloor) return;
     if (bLocked) return;
-    if (bPressed) return; // 한 번만 시작(원하면 제거)
+    if (bPressed) return;
 
     bPressed = true;
 
-    // ✅ 모든 클라에 바닥 ON 반영
+    // ✅ 바닥 ON + 방해벽 시스템 ON
     MulticastSetFloorActive(true);
+    ApplyTreapTiles_Server(true);
 
-    // ✅ 25초 후 OFF는 서버 타이머로
+    // ✅ 25초 후 OFF
     GetWorldTimerManager().ClearTimer(DisappearTimer);
     GetWorldTimerManager().SetTimer(DisappearTimer, this, &ATimerFloorButton::HideFloor_Server, DisappearDelay, false);
 }
@@ -78,10 +98,29 @@ void ATimerFloorButton::LockFloor()
     if (!TargetFloor) return;
 
     bLocked = true;
+
     GetWorldTimerManager().ClearTimer(DisappearTimer);
 
-    // ✅ 잠금 시 바닥 확정 ON
+    // 바닥 확정 ON (방해벽은 계속 ON으로 유지 중)
     MulticastSetFloorActive(true);
+    ApplyTreapTiles_Server(true);
+}
+
+void ATimerFloorButton::StopGimmick(bool bKeepFloorOn)
+{
+    if (!HasAuthority()) return;
+
+    // ✅ 성공 처리: 타이머 종료 + 다시 안 꺼지게 잠금
+    bLocked = true;
+    bPressed = false;
+
+    GetWorldTimerManager().ClearTimer(DisappearTimer);
+
+    // ✅ 방해벽 시스템 OFF
+    ApplyTreapTiles_Server(false);
+
+    // ✅ 바닥은 유지(true) / 끄고 싶으면 false
+    MulticastSetFloorActive(bKeepFloorOn);
 }
 
 void ATimerFloorButton::HideFloor_Server()
@@ -90,8 +129,30 @@ void ATimerFloorButton::HideFloor_Server()
     if (!TargetFloor) return;
     if (bLocked) return;
 
-    // ✅ 모든 클라에 바닥 OFF 반영
+    // ✅ 바닥 OFF + 방해벽 OFF
     MulticastSetFloorActive(false);
+    ApplyTreapTiles_Server(false);
+
+    // ✅ 25초 끝나면 다시 누를 수 있게
+    bPressed = false;
+}
+
+void ATimerFloorButton::ResetPuzzle(bool bStartWithFloorOn)
+{
+    if (!HasAuthority()) return;
+
+    GetWorldTimerManager().ClearTimer(DisappearTimer);
+    bLocked = false;
+    bPressed = false;
+
+    MulticastSetFloorActive(bStartWithFloorOn);
+    ApplyTreapTiles_Server(bStartWithFloorOn);
+
+    if (bStartWithFloorOn)
+    {
+        bPressed = true;
+        GetWorldTimerManager().SetTimer(DisappearTimer, this, &ATimerFloorButton::HideFloor_Server, DisappearDelay, false);
+    }
 }
 
 void ATimerFloorButton::MulticastSetFloorActive_Implementation(bool bActive)
