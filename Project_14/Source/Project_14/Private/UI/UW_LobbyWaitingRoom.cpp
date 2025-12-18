@@ -106,6 +106,11 @@ void UUW_LobbyWaitingRoom::OnStartGameClicked()
 
 void UUW_LobbyWaitingRoom::OnLeaveClicked()
 {
-	RemoveFromParent();
+	//RemoveFromParent();
+	if (ALobbyPlayerController* PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
+	{
+		PC->Server_LeaveRoom(CurrentRoomID);
+	}
+	
 }
 

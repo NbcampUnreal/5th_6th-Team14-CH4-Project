@@ -16,4 +16,7 @@ class PROJECT_14_API UProjectGameInstance : public UGameInstance
 public:
 	UPROPERTY(BlueprintReadWrite, Category = "Character Select")
 	ECharacterType SelectedCharacterType;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Player Info")
+	FString PlayerName = TEXT("Player");
 };

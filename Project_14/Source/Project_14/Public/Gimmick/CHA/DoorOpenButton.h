@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -20,14 +20,17 @@ protected:
     virtual void BeginPlay() override;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-    UStaticMeshComponent* ButtonMesh;
+    TObjectPtr<UStaticMeshComponent> ButtonMesh;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-    UBoxComponent* TriggerBox;
+    TObjectPtr<UBoxComponent> TriggerBox;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button")
-    TArray<AActor*> TargetWalls;
+    // ✅ 버튼 인스턴스(레벨에 놓인 버튼)마다 다르게 지정하기 좋음
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Button")
+    TArray<TObjectPtr<AActor>> TargetWalls;
 
+    // ✅ 중복 발동 방지 (서버에서 true로 바꾸면 클라에도 반영됨)
+    UPROPERTY(Replicated)
     bool bAlreadyActivated = false;
 
     UFUNCTION()
@@ -46,6 +49,17 @@ protected:
         UPrimitiveComponent* OtherComp,
         int32 OtherBodyIndex);
 
+    // ✅ 클라에서 밟았으면 서버에게 “삭제 실행” 요청
+    UFUNCTION(Server, Reliable)
+    void ServerActivate(AActor* Activator);
+    void ServerActivate_Implementation(AActor* Activator);
+
+    // 서버에서만 실제 삭제 수행
+    void ActivateOnServer(AActor* Activator);
+
 public:
     virtual void Tick(float DeltaTime) override;
+
+    // bAlreadyActivated 복제용
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

@@ -7,7 +7,7 @@ void ALobbyGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(ALobbyGameStateBase, RoomList);
-	DOREPLIFETIME(ALobbyGameStateBase, GameServerIP);
+	//DOREPLIFETIME(ALobbyGameStateBase, GameServerIP);
 }
 
 
@@ -16,6 +16,18 @@ void ALobbyGameStateBase::AddRoom(FRoomInfo NewRoom)
 	
 	RoomList.Add(NewRoom);
 
+	if (GetNetMode() != NM_DedicatedServer)
+	{
+		OnRep_RoomList();
+	}
 	
 	UE_LOG(LogTemp, Log, TEXT("Room Added! ID: %d, Name: %s"), NewRoom.RoomID, *NewRoom.RoomName);
+}
+
+void ALobbyGameStateBase::OnRep_RoomList()
+{
+	if (OnRoomListUpdated.IsBound())
+	{
+		OnRoomListUpdated.Broadcast();
+	}
 }

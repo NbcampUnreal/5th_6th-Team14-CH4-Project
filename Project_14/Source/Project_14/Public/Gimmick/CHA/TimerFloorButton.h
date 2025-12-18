@@ -2,10 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "TimerFloorButton.generated.h"
+#include "Engine/EngineTypes.h"   // FHitResult
+#include "TimerManager.h"         // FTimerHandle
+#include "TimerFloorButton.generated.h"  // ✅ 반드시 include 중 마지막!
 
 class UStaticMeshComponent;
 class UBoxComponent;
+class UPrimitiveComponent;
+class ATreapTile;
 
 UCLASS()
 class PROJECT_14_API ATimerFloorButton : public AActor
@@ -15,13 +19,24 @@ class PROJECT_14_API ATimerFloorButton : public AActor
 public:
     ATimerFloorButton();
 
-    // (참고) BP에서 직접 호출하고 싶으면 써도 되지만,
-    // 오버랩 기반이면 서버에서 자동으로 처리됨
+    // 버튼(밟기)로 25초 타이머 시작
     UFUNCTION(BlueprintCallable, Category = "TimerFloor")
     void PressButton();
 
+    // 잠금(25초 타이머 취소 + 바닥 유지)
     UFUNCTION(BlueprintCallable, Category = "TimerFloor")
     void LockFloor();
+
+    // 재시작(리셋)
+    UFUNCTION(BlueprintCallable, Category = "TimerFloor")
+    void ResetPuzzle(bool bStartWithFloorOn = false);
+
+    // ✅ 문 열림 성공 버튼에서 호출:
+    // - 25초 타이머 즉시 종료
+    // - Treap(방해벽) OFF
+    // - 바닥은 유지(true)
+    UFUNCTION(BlueprintCallable, Category = "TimerFloor")
+    void StopGimmick(bool bKeepFloorOn = true);
 
 protected:
     virtual void BeginPlay() override;
@@ -32,8 +47,8 @@ protected:
     UPROPERTY(VisibleAnywhere, Category = "Components")
     UBoxComponent* Trigger;
 
-    // 레벨에 배치한 바닥 액터 지정(StaticMeshActor 등)
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "TimerFloor")
+    // 레벨에 배치한 바닥 액터 지정
+    UPROPERTY(Replicated, EditInstanceOnly, BlueprintReadWrite, Category = "TimerFloor")
     AActor* TargetFloor = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TimerFloor")
@@ -45,6 +60,10 @@ protected:
     UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "TimerFloor")
     bool bPressed = false;
 
+    // ✅ 25초 시스템에 같이 묶일 TreapTile(방해벽)들
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "TimerFloor")
+    TArray<ATreapTile*> TreapTiles;
+
     FTimerHandle DisappearTimer;
 
     UFUNCTION()
@@ -53,8 +72,8 @@ protected:
         bool bFromSweep, const FHitResult& SweepResult);
 
     void HideFloor_Server();
+    void ApplyTreapTiles_Server(bool bActive);
 
-    // ✅ 모든 클라(서버 포함)에게 바닥 상태 반영
     UFUNCTION(NetMulticast, Reliable)
     void MulticastSetFloorActive(bool bActive);
 

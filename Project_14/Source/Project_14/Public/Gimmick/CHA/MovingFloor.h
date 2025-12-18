@@ -31,7 +31,7 @@ protected:
     UStaticMeshComponent* FloorMesh;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-    FVector TargetOffset = FVector(-2400.f, 0.f, 0.f);
+    FVector TargetOffset = FVector(0.f, -2400.f, 0.f);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
     float MoveTime = 7.5f;
