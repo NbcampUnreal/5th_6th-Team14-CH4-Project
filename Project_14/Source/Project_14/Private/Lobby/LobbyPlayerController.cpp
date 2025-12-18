@@ -117,7 +117,37 @@ void ALobbyPlayerController::Server_CreateRoom_Implementation(const FRoomInfo& N
 		FinalRoomInfo.RoomID = GS->RoomList.Num() + 1;
 		FinalRoomInfo.HostName = PlayerState->GetPlayerName();
 		FinalRoomInfo.GameServerIP = TEXT("127.0.0.1");
-		FinalRoomInfo.GameServerPort = GS->RoomList.Num() + 7778;
+
+		int32 StartPort = 7779;
+		int32 MaxServerCount = 2;
+		int32 FoundPort = -1;
+
+		for (int32 i = 0; i < MaxServerCount; i++)
+		{
+			int32 CandidatePort = StartPort + i;
+			bool bisUsed = false;
+
+			for (const FRoomInfo& RoomInfo : GS->RoomList)
+			{
+				if (RoomInfo.GameServerPort == CandidatePort)
+				{
+					bisUsed = true;
+					break;
+				}
+			}
+			if (!bisUsed)
+			{
+				FoundPort = CandidatePort;
+				break;
+			}
+		}
+		if (FoundPort == -1)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Server not found"));
+			return;
+		}
+		
+		FinalRoomInfo.GameServerPort = FoundPort;
 		
 
 		UE_LOG(LogTemp, Log, TEXT("Server: Creat Room {%s} by %s"),*FinalRoomInfo.RoomName, *FinalRoomInfo.HostName);
