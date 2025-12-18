@@ -16,6 +16,13 @@ UUW_TitleLayout::UUW_TitleLayout(const FObjectInitializer& ObjectInitializer)
 
 void UUW_TitleLayout::NativeConstruct()
 {
+	
+}
+
+void UUW_TitleLayout::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
 	PlayButton.Get()->OnClicked.AddDynamic(this, &ThisClass::OnPlayButtonClicked);
 	ExitButton.Get()->OnClicked.AddDynamic(this, &ThisClass::OnExitButtonClicked);
 }

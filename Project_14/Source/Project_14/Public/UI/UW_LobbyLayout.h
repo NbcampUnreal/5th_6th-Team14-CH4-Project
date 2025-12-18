@@ -20,6 +20,8 @@ class PROJECT_14_API UUW_LobbyLayout : public UUserWidget
 
 	public:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+	virtual void NativeOnInitialized() override;
 
 	UFUNCTION(BlueprintCallable)
 	void UpdateRoomList();

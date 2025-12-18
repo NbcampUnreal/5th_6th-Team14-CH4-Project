@@ -175,11 +175,19 @@ void ALobbyPlayerController::Server_LeaveRoom_Implementation(int32 RoomID)
 			break;
 		}
 	}
+	if (RoomIndex == -1)
+	{
+		return;
+	}
+	FRoomInfo& TargetRoomRef = GS->RoomList[RoomIndex];
 	FString PlayerName = PlayerState->GetPlayerName();
 	bool bIsHost = (TargetRoom->HostName == PlayerName);
 	if (bIsHost == true)
 	{
-		for (APlayerState* MemberPS : TargetRoom->MemberPlayerStates)
+		TArray<ALobbyPlayerState*> MembersToNotify = TargetRoomRef.MemberPlayerStates;
+		GS->RoomList.RemoveAt(RoomIndex);
+		GS->ForceNetUpdate();
+		for (APlayerState* MemberPS : MembersToNotify)
 		{
 			if (MemberPS != nullptr)
 			{
@@ -190,7 +198,7 @@ void ALobbyPlayerController::Server_LeaveRoom_Implementation(int32 RoomID)
 				}
 			}
 		}
-		GS->RoomList.RemoveAt(RoomIndex);
+		//GS->RoomList.RemoveAt(RoomIndex);
 	}else
 	{
 		if (ALobbyPlayerState* PS = GetPlayerState<ALobbyPlayerState>())
@@ -198,6 +206,7 @@ void ALobbyPlayerController::Server_LeaveRoom_Implementation(int32 RoomID)
 			TargetRoom->MemberPlayerStates.Remove(PS);
 		}
 		TargetRoom->CurrentPlayers--;
+		GS->ForceNetUpdate();
 		ClientRPC_ShowLobbyUI();
 	}
 }

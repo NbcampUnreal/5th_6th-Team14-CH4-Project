@@ -14,14 +14,37 @@ void UUW_LobbyLayout::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	ALobbyGameStateBase* GS = GetWorld()->GetGameState<ALobbyGameStateBase>();
+	if (GS != nullptr)
+	{
+		GS->OnRoomListUpdated.RemoveDynamic(this,&UUW_LobbyLayout::UpdateRoomList);
+		GS->OnRoomListUpdated.AddDynamic(this,&UUW_LobbyLayout::UpdateRoomList);
+
+		UpdateRoomList();
+	}
+	
+}
+
+void UUW_LobbyLayout::NativeDestruct()
+{
+	Super::NativeDestruct();
+
+	ALobbyGameStateBase* GS = GetWorld()->GetGameState<ALobbyGameStateBase>();
+	if (GS != nullptr)
+	{
+		GS->OnRoomListUpdated.RemoveDynamic(this,&UUW_LobbyLayout::UpdateRoomList);
+	}
+}
+
+void UUW_LobbyLayout::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
 	if (CreateRoomButton != nullptr)
 	{
-		CreateRoomButton->OnClicked.RemoveDynamic(this, &UUW_LobbyLayout::OnCreateButtonClicked);
 		CreateRoomButton->OnClicked.AddDynamic(this, &UUW_LobbyLayout::OnCreateButtonClicked);
 	}
 	if (RefreshButton != nullptr)
 	{
-		RefreshButton->OnClicked.RemoveDynamic(this, &UUW_LobbyLayout::OnRefreshButtonClicked);
 		RefreshButton->OnClicked.AddDynamic(this, &UUW_LobbyLayout::OnRefreshButtonClicked);
 	}
 }
