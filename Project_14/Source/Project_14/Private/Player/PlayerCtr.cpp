@@ -94,9 +94,6 @@ void APlayerCtr::CreateInGameHUD()
 	if (!IsLocalController())
 		return;
 
-	if (InGameHUD)
-		return;
-
 	if (InGameHUDClass)
 	{
 		InGameHUD = CreateWidget<UInGameHUDWidget>(this, InGameHUDClass);
