@@ -9,6 +9,7 @@ ADragonBridgeJump::ADragonBridgeJump()
 
 	bReplicates = true;
 	SetReplicateMovement(true);
+	bAlwaysRelevant = true;
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRoot;
@@ -23,19 +24,24 @@ void ADragonBridgeJump::BeginPlay()
 
 	StartLocation = GetActorLocation();
 
-	SetActorHiddenInGame(true);
-	SetActorEnableCollision(false);
+	// 처음엔 멈춰 있음
 	SetActorTickEnabled(false);
 
+	// 경로 수집 (기존 로직 유지)
 	TArray<AActor*> Found;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMakerBlockJump::StaticClass(), Found);
+	UGameplayStatics::GetAllActorsOfClass(
+		GetWorld(),
+		AMakerBlockJump::StaticClass(),
+		Found
+	);
 
 	Targets.SetNum(MaxTargetNum);
 
 	for (AActor* A : Found)
 	{
 		AMakerBlockJump* Marker = Cast<AMakerBlockJump>(A);
-		if (!Marker) continue;
+		if (!Marker)
+			continue;
 
 		if (Targets.IsValidIndex(Marker->TargetIndex))
 		{
@@ -46,41 +52,77 @@ void ADragonBridgeJump::BeginPlay()
 
 void ADragonBridgeJump::ToggleState()
 {
+	if (bHasStarted)
+		return;
+
+	bHasStarted = true;
+	bIsStopped = false;
+
 	if (HasAuthority())
 	{
 		ToggleState_Internal();
 	}
-	else
-	{
-		Server_ToggleState();
-	}
-}
-
-void ADragonBridgeJump::Server_ToggleState_Implementation()
-{
-	ToggleState_Internal();
 }
 
 void ADragonBridgeJump::ToggleState_Internal()
 {
+	UE_LOG(LogTemp, Warning, TEXT("[DragonBridgeJump] ToggleState"));
+
 	SetActorLocation(StartLocation);
 
 	TargetNum = 0;
 	bIsEnd = false;
-	TargetLocation = Targets[0];
 
-	SetActorHiddenInGame(false);
-	SetActorEnableCollision(true);
+	if (Targets.Num() > 0)
+	{
+		TargetLocation = Targets[0];
+	}
+
 	SetActorTickEnabled(true);
+}
+
+void ADragonBridgeJump::StopBridge()
+{
+	if (HasAuthority())
+	{
+		StopBridge_Internal();
+	}
+	else
+	{
+		Server_StopBridge();
+	}
+}
+
+void ADragonBridgeJump::Server_StopBridge_Implementation()
+{
+	StopBridge_Internal();
+}
+
+void ADragonBridgeJump::StopBridge_Internal()
+{
+	if (bIsStopped)
+		return;
+
+	UE_LOG(LogTemp, Warning, TEXT("[DragonBridgeJump] StopBridge"));
+
+	bIsStopped = true;
+	Multicast_ApplyStop();
+}
+
+void ADragonBridgeJump::Multicast_ApplyStop_Implementation()
+{
+	bIsStopped = true;
+	SetActorTickEnabled(false);
 }
 
 void ADragonBridgeJump::NextTarget()
 {
 	TargetNum++;
 
-	if (TargetNum >= MaxTargetNum)
+	if (TargetNum >= Targets.Num())
 	{
 		bIsEnd = true;
+		SetActorTickEnabled(false);
 		return;
 	}
 
@@ -91,7 +133,7 @@ void ADragonBridgeJump::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (!HasAuthority())
+	if (bIsStopped || bIsEnd)
 		return;
 
 	FVector Current = GetActorLocation();
@@ -102,14 +144,6 @@ void ADragonBridgeJump::Tick(float DeltaTime)
 
 	if (FVector::Dist(Current, TargetLocation) < 1.f)
 	{
-		if (bIsEnd)
-		{
-			SetActorHiddenInGame(true);
-			SetActorEnableCollision(false);
-			SetActorTickEnabled(false);
-			return;
-		}
-
 		NextTarget();
 	}
 }
@@ -118,7 +152,8 @@ void ADragonBridgeJump::OnRep_TargetNum()
 {
 }
 
-void ADragonBridgeJump::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void ADragonBridgeJump::GetLifetimeReplicatedProps(
+	TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
@@ -126,4 +161,5 @@ void ADragonBridgeJump::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(ADragonBridgeJump, TargetNum);
 	DOREPLIFETIME(ADragonBridgeJump, TargetLocation);
 	DOREPLIFETIME(ADragonBridgeJump, bIsEnd);
+	DOREPLIFETIME(ADragonBridgeJump, bIsStopped);
 }
