@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -11,44 +9,57 @@ class PROJECT_14_API ADragonBridge : public AActor
 {
 	GENERATED_BODY()
 
+public:
+	ADragonBridge();
+
+	virtual void Tick(float DeltaTime) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 protected:
 	virtual void BeginPlay() override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
-public:
-	virtual void Tick(float DeltaTime) override;
-	// Sets default values for this actor's properties
-	ADragonBridge();
+
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* SceneRoot;
+
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* BlockMesh;
 
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float MoveSpeed = 200.0f;
-
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Movement")
 	int32 MaxTargetNum = 8;
+
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float MoveSpeed = 200.f;
+
+	UPROPERTY(Replicated)
+	FVector StartLocation;
 
 	UPROPERTY(ReplicatedUsing = OnRep_TargetNum)
 	int32 TargetNum = 0;
 
 	UPROPERTY(Replicated)
-	FVector StartLocation;
-
-	UPROPERTY(Replicated)
 	FVector TargetLocation;
+
 	UPROPERTY(Replicated)
 	bool bIsEnd = false;
+
 	TArray<FVector> Targets;
 
+	// 시작 중복 방지
+	UPROPERTY()
+	bool bHasStarted = false;
+
+public:
+	// 기존: 다리 시작
 	UFUNCTION(BlueprintCallable)
 	void ToggleState();
+
 private:
-	UFUNCTION(Server, Reliable)
-	void Server_ToggleState();
+	// 실제 시작 로직
 	void ToggleState_Internal();
+
+	// 다음 목표 지점
 	void NextTarget();
+
 	UFUNCTION()
 	void OnRep_TargetNum();
 };
