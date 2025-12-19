@@ -1,18 +1,15 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Gimmick/SIC/DragonBridge.h"
 #include "Gimmick/SIC/MakerBlock.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
-// Sets default values
 ADragonBridge::ADragonBridge()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
 	bReplicates = true;
 	SetReplicateMovement(true);
+	bAlwaysRelevant = true;
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRoot;
@@ -21,112 +18,112 @@ ADragonBridge::ADragonBridge()
 	BlockMesh->SetupAttachment(SceneRoot);
 }
 
-// Called when the game starts or when spawned
 void ADragonBridge::BeginPlay()
 {
 	Super::BeginPlay();
-	StartLocation = SceneRoot->GetRelativeLocation();
 
-	SetActorHiddenInGame(true);
-	SetActorEnableCollision(false);
+	StartLocation = GetActorLocation();
+
+	// 처음엔 멈춰 있음
 	SetActorTickEnabled(false);
 
-	TArray <AActor*> Found;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMakerBlock::StaticClass(), Found);
+	// 경로 수집 (기존 로직 유지)
+	TArray<AActor*> Found;
+	UGameplayStatics::GetAllActorsOfClass(
+		GetWorld(),
+		AMakerBlock::StaticClass(),
+		Found
+	);
 
 	Targets.SetNum(MaxTargetNum);
 
 	for (AActor* A : Found)
 	{
 		AMakerBlock* Marker = Cast<AMakerBlock>(A);
-		if (!Marker) continue;
+		if (!Marker)
+			continue;
 
-		Targets[Marker->TargetIndex] = Marker->GetActorLocation();
+		if (Targets.IsValidIndex(Marker->TargetIndex))
+		{
+			Targets[Marker->TargetIndex] = Marker->GetActorLocation();
+		}
 	}
 }
+
 void ADragonBridge::ToggleState()
 {
+	if (bHasStarted)
+		return;
+
+	bHasStarted = true;
+
 	if (HasAuthority())
 	{
 		ToggleState_Internal();
 	}
-	else
-	{
-		Server_ToggleState();
-	}
 }
-void ADragonBridge::Server_ToggleState_Implementation()
-{
-	ToggleState_Internal();
-}
+
 void ADragonBridge::ToggleState_Internal()
 {
-	SceneRoot->SetRelativeLocation(StartLocation);
+	UE_LOG(LogTemp, Warning, TEXT("[DragonBridge] ToggleState"));
+
+	SetActorLocation(StartLocation);
 
 	TargetNum = 0;
 	bIsEnd = false;
 
-	TargetLocation = Targets[0];
-	SetActorHiddenInGame(false);
-	SetActorEnableCollision(true);
-	SetActorTickEnabled(true);
-	PrimaryActorTick.SetTickFunctionEnable(true);
-	UE_LOG(LogTemp, Warning, TEXT("ToggleState Ativate"));
+	if (Targets.Num() > 0)
+	{
+		TargetLocation = Targets[0];
+	}
 
+	SetActorTickEnabled(true);
 }
+
 void ADragonBridge::NextTarget()
 {
 	TargetNum++;
 
-	if (TargetNum >= MaxTargetNum)
+	if (TargetNum >= Targets.Num())
 	{
 		bIsEnd = true;
+		SetActorTickEnabled(false);
 		return;
 	}
 
 	TargetLocation = Targets[TargetNum];
-
 }
-// Called every frame
+
 void ADragonBridge::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (!HasAuthority()) return;
+	if (bIsEnd)
+		return;
 
-	FVector Current = SceneRoot->GetRelativeLocation();
-
-	UE_LOG(LogTemp, Warning, TEXT("Move!"));
-
-	FVector NewLocation = 
+	FVector Current = GetActorLocation();
+	FVector NewLocation =
 		FMath::VInterpConstantTo(Current, TargetLocation, DeltaTime, MoveSpeed);
 
-	SceneRoot->SetRelativeLocation(NewLocation);
+	SetActorLocation(NewLocation);
 
-	if (FVector::Dist(Current, TargetLocation) < 1.0f)
+	if (FVector::Dist(Current, TargetLocation) < 1.f)
 	{
-		if (bIsEnd)
-		{
-			SetActorHiddenInGame(true);
-			SetActorEnableCollision(false);
-			SetActorTickEnabled(false);
-			return;
-		}
 		NextTarget();
 	}
-
 }
 
 void ADragonBridge::OnRep_TargetNum()
 {
-
 }
-void ADragonBridge::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+
+void ADragonBridge::GetLifetimeReplicatedProps(
+	TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ADragonBridge, TargetNum);
 	DOREPLIFETIME(ADragonBridge, StartLocation);
+	DOREPLIFETIME(ADragonBridge, TargetNum);
 	DOREPLIFETIME(ADragonBridge, TargetLocation);
 	DOREPLIFETIME(ADragonBridge, bIsEnd);
 }
