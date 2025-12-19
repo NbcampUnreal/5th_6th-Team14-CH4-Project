@@ -4,7 +4,6 @@
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "GameFramework/Pawn.h"
-#include "Net/UnrealNetwork.h"
 
 ADoorOpenButton::ADoorOpenButton()
 {
@@ -16,12 +15,16 @@ ADoorOpenButton::ADoorOpenButton()
     ButtonMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ButtonMesh"));
     SetRootComponent(ButtonMesh);
 
-    // ✅ 버튼 메쉬가 Pawn을 막아서 오버랩이 안 터지는 경우가 많아서 기본은 NoCollision 추천
-    ButtonMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    // 발판(블록 통과 문제 있으면 여기 먼저 체크)
+    ButtonMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    ButtonMesh->SetCollisionResponseToAllChannels(ECR_Block);
 
     TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
     TriggerBox->SetupAttachment(RootComponent);
-    TriggerBox->InitBoxExtent(FVector(80.f, 80.f, 40.f));
+
+    // ✅ 윗면에 얇게(원하면 에디터에서 조정 가능)
+    TriggerBox->SetBoxExtent(FVector(45.f, 45.f, 5.f));
+    TriggerBox->SetRelativeLocation(FVector(0.f, 0.f, 25.f));
 
     TriggerBox->SetGenerateOverlapEvents(true);
     TriggerBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -34,14 +37,11 @@ void ADoorOpenButton::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ✅ 서버/클라 둘 다 바인딩 (오버랩 감지는 어디서든 일어날 수 있음)
-    TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ADoorOpenButton::OnOverlapBegin);
-    TriggerBox->OnComponentEndOverlap.AddDynamic(this, &ADoorOpenButton::OnOverlapEnd);
-}
-
-void ADoorOpenButton::Tick(float DeltaTime)
-{
-    Super::Tick(DeltaTime);
+    // ✅ 핵심: 서버만 오버랩 처리 (RPC 필요 없음)
+    if (HasAuthority())
+    {
+        TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ADoorOpenButton::OnOverlapBegin);
+    }
 }
 
 void ADoorOpenButton::OnOverlapBegin(
@@ -52,61 +52,38 @@ void ADoorOpenButton::OnOverlapBegin(
     bool bFromSweep,
     const FHitResult& SweepResult)
 {
-    if (bAlreadyActivated || TargetWalls.Num() == 0 || !OtherActor)
+    // BeginPlay에서 서버만 바인딩했으니 여기서는 서버라고 봐도 됨
+    if (!HasAuthority())
         return;
 
-    // ✅ Character가 아니라 Pawn이어도 허용 (더 안전)
+    if (!OtherActor)
+        return;
+
+    // 플레이어(Pawn)만
     if (!Cast<APawn>(OtherActor))
         return;
 
-    // ✅ 클라에서 밟으면 서버 RPC 요청
-    if (!HasAuthority())
-    {
-        ServerActivate(OtherActor);
+    if (bPressOnce && bPressed)
         return;
-    }
 
-    // ✅ 서버라면 바로 실행
-    ActivateOnServer(OtherActor);
+    PressOnServer(OtherActor);
 }
 
-void ADoorOpenButton::OnOverlapEnd(
-    UPrimitiveComponent* OverlappedComp,
-    AActor* OtherActor,
-    UPrimitiveComponent* OtherComp,
-    int32 OtherBodyIndex)
-{
-}
-
-void ADoorOpenButton::ServerActivate_Implementation(AActor* Activator)
-{
-    // 이 함수는 서버에서 실행됨
-    ActivateOnServer(Activator);
-}
-
-void ADoorOpenButton::ActivateOnServer(AActor* Activator)
+void ADoorOpenButton::PressOnServer(AActor* PressingActor)
 {
     if (!HasAuthority())
         return;
 
-    if (bAlreadyActivated || TargetWalls.Num() == 0 || !Activator)
-        return;
+    bPressed = true;
 
-    if (!Cast<APawn>(Activator))
-        return;
-
-    for (AActor* Wall : TargetWalls)
+    // ✅ 지정한 큐브 2개 삭제
+    if (IsValid(TargetCube1))
     {
-        if (!Wall) continue;
-        Wall->Destroy(); // ✅ 서버 Destroy -> 복제되는 액터면 클라에서도 같이 사라짐
+        TargetCube1->Destroy();
     }
 
-    bAlreadyActivated = true;
-}
-
-void ADoorOpenButton::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-    DOREPLIFETIME(ADoorOpenButton, bAlreadyActivated);
+    if (IsValid(TargetCube2))
+    {
+        TargetCube2->Destroy();
+    }
 }
