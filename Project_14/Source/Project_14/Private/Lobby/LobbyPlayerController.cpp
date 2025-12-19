@@ -4,6 +4,7 @@
 #include "Lobby/LobbyPlayerController.h"
 
 #include "Blueprint/UserWidget.h"
+#include "Chatting/ChatInput.h"
 #include "GameFramework/PlayerState.h"
 #include "GameManager/ProjectGameInstance.h"
 #include "Lobby/LobbyGameStateBase.h"
@@ -45,6 +46,7 @@ void ALobbyPlayerController::BeginPlay()
 	
 }
 
+
 void ALobbyPlayerController::ClientRPC_ShowLobbyUI_Implementation()
 {
 	if (WaitingRoomWidgetInstance)
@@ -82,6 +84,11 @@ void ALobbyPlayerController::ClientRPC_ShowWaitingRoomUI_Implementation(const FR
 		{
 			WaitingRoomWidgetInstance->UpdateRoomUI(RoomInfo);
 			WaitingRoomWidgetInstance->AddToViewport();
+			if (ChatInputWidgetInstance)
+			{
+				ChatInputWidgetInstance->RemoveFromParent();
+				ChatInputWidgetInstance->AddToViewport();
+			}
 			FInputModeUIOnly Mode;
 			Mode.SetWidgetToFocus(WaitingRoomWidgetInstance->GetCachedWidget());
 			SetInputMode(Mode);
@@ -245,6 +252,8 @@ bool ALobbyPlayerController::Server_LeaveRoom_Validate(int32 RoomID)
 {
 	return true;
 }
+
+
 
 void ALobbyPlayerController::RequestCreateRoom(FString RoomName)
 {

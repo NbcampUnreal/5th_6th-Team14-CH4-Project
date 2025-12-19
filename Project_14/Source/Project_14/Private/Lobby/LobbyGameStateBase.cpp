@@ -11,6 +11,11 @@ void ALobbyGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 }
 
 
+TArray<APlayerState*> ALobbyGameStateBase::GetPlayersForChat(APlayerState* SenderPS)
+{
+	return Super::GetPlayersForChat(SenderPS);
+}
+
 void ALobbyGameStateBase::AddRoom(FRoomInfo NewRoom)
 {
 	
