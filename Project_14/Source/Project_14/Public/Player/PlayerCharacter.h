@@ -9,6 +9,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 struct FInputActionValue;
+class ALever;
 
 UENUM(BlueprintType)
 enum class ECharacterType : uint8
@@ -87,4 +88,8 @@ private:
 	float NormalSpeed;
 	float SprintSpeedMultiplier;
 	float SprintSpeed;
+	UPROPERTY()
+	ALever* CurrentLever = nullptr;
+	UFUNCTION(Server, Reliable)
+	void Server_InteractLever(ALever* Lever);
 };

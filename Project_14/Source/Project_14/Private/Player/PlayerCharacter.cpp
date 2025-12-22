@@ -9,6 +9,7 @@
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
 #include "DrawDebugHelpers.h"
+#include "Gimmick/SIC/Lever.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -305,9 +306,24 @@ void APlayerCharacter::Look(const FInputActionValue& value)
 	}
 }
 
-void APlayerCharacter::MouseInput(const FInputActionValue& value)
+void APlayerCharacter::MouseInput(const FInputActionValue& Value)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Right Click!"));
+	if (!Value.Get<bool>())
+		return;
 
+	if (!CurrentLever)
+		return;
+
+	//  핵심: 소유 액터(플레이어)에서 서버 RPC 호출
+	Server_InteractLever(CurrentLever);
 }
+void APlayerCharacter::Server_InteractLever_Implementation(ALever* Lever)
+{
+	if (!IsValid(Lever))
+		return;
 
+	// 서버에서 레버 실행 (서버 권한이므로 HasAuthority true)
+	Lever->TryInteract(this);
+}
 
