@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Player/BasePlayerController.h"
 #include "Server/ServerTypes.h"
 #include "UI/UW_LobbyWaitingRoom.h"
 #include "LobbyPlayerController.generated.h"
@@ -13,7 +14,7 @@ class UUW_LobbyLayout;
  * 
  */
 UCLASS()
-class PROJECT_14_API ALobbyPlayerController : public APlayerController
+class PROJECT_14_API ALobbyPlayerController : public ABasePlayerController
 {
 	GENERATED_BODY()
 
@@ -30,6 +31,7 @@ public:
 
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_ShowLobbyUI();
+	
 
 	//Server RPC
 	UFUNCTION(Server, Reliable,WithValidation)
@@ -45,7 +47,8 @@ public:
 	void Server_SetPlayerName(const FString& Name);
 
 	UFUNCTION(Server,Reliable,WithValidation)
-	void Server_LeaveRoom(int32 RoomID);	
+	void Server_LeaveRoom(int32 RoomID);
+	
 	
 	
 	//etc

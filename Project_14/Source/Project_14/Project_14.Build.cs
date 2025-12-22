@@ -14,7 +14,11 @@ public class Project_14 : ModuleRules
 			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
 			
 			//UI
-			"UMG",
+			"UMG","Slate","SlateCore",
+			
+			//Chating Plugin module
+			"SocketIOClient",
+			"SIOJson",
 		});
 	}
 }
