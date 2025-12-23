@@ -19,6 +19,7 @@ public class Project_14 : ModuleRules
 			//Chating Plugin module
 			"SocketIOClient",
 			"SIOJson",
+		});
 
 			//Niagara
 			"Niagara",          

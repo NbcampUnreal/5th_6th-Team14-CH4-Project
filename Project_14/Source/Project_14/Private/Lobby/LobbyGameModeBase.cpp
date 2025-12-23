@@ -27,3 +27,24 @@ void ALobbyGameModeBase::StartGameForRoom(const FRoomInfo& RoomData)
 		}
 	}
 }
+
+void ALobbyGameModeBase::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	if (ALobbyGameStateBase* GS = GetGameState<ALobbyGameStateBase>())
+	{
+		GS->AddLobbyUser(NewPlayer->PlayerState);
+	}
+}
+
+void ALobbyGameModeBase::Logout(AController* Exiting)
+{
+	
+
+	if (ALobbyGameStateBase* GS = GetGameState<ALobbyGameStateBase>())
+	{
+		GS->ProcessPlayerLogout(Exiting->PlayerState);
+	}
+	Super::Logout(Exiting);
+}

@@ -22,12 +22,15 @@ class PROJECT_14_API ABasePlayerController : public APlayerController
 	
 	virtual void BeginPlay() override;
 
+	//Chatting
 	UFUNCTION(Client, Reliable,WithValidation)
 	void ClientRPCPrintChatMessageString(const FString& SenderName,const FString& InChatMessageString);
-
 	UFUNCTION(Server, Reliable,WithValidation)
 	void ServerRPCPrintChatMessageString(const FString& InChatMessageString);
 
+	//Set Player Info
+	UFUNCTION(Server,Reliable,WithValidation)
+	void ServerRPC_SetPlayerName(const FString& Name);
 protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UChatInput> ChatInputWidgetClass;

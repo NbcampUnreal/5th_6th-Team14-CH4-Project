@@ -32,27 +32,21 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_ShowLobbyUI();
 	
-
+	
 	//Server RPC
-	UFUNCTION(Server, Reliable,WithValidation)
-	void Server_CreateRoom(const FRoomInfo& NewRoomInfo);
+	
 	
 	UFUNCTION(Server,Reliable,WithValidation)
-	void Server_JoinRoom(int32 RoomID);
-	
+	void ServerRPC_CreateRoom(const FString& RoomName);
 	UFUNCTION(Server,Reliable,WithValidation)
-	void Server_StartGame(int32 RoomID);
+	void ServerRPC_StartGame();
+	UFUNCTION(Server,Reliable,WithValidation)
+	void ServerRPC_JoinRoom(int32 RoomID);
+	UFUNCTION(Server,Reliable,WithValidation)
+	void ServerRPC_LeaveRoom(int32 RoomID);
+	
+	
 
-	UFUNCTION(Server,Reliable,WithValidation)
-	void Server_SetPlayerName(const FString& Name);
-
-	UFUNCTION(Server,Reliable,WithValidation)
-	void Server_LeaveRoom(int32 RoomID);
-	
-	
-	
-	//etc
-	void RequestCreateRoom(FString RoomName);
 
 protected:
 

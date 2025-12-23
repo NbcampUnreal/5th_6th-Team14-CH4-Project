@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 
+
 void ATitlePlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -35,4 +36,7 @@ void ATitlePlayerController::JoinServer(const FString& InIPAddress)
 {
 	FName NextLevelName = FName(*InIPAddress);
 	UGameplayStatics::OpenLevel(GetWorld(),NextLevelName,true);
+
+	//UGameplayStatics::OpenLevel(GetWorld(),"LobbyLevel",true);
+
 }
