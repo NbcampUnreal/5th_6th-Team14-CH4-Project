@@ -20,5 +20,10 @@ public class Project_14 : ModuleRules
 			"SocketIOClient",
 			"SIOJson",
 		});
+
+			//Niagara
+			"Niagara",          
+            "NiagaraCore",
+        });
 	}
 }

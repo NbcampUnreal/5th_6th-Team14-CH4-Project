@@ -9,6 +9,8 @@
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
 #include "DrawDebugHelpers.h"
+#include "Gimmick/SIC/Lever.h"
+#include "EngineUtils.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -33,6 +35,12 @@ APlayerCharacter::APlayerCharacter()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
+
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(
+		this, &APlayerCharacter::OnInteractOverlapBegin);
+
+	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(
+		this, &APlayerCharacter::OnInteractOverlapEnd);
 
 	bReplicates = true;
 
@@ -163,7 +171,7 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 			{
 				EnhancedInput->BindAction(
 					PlayerController->MouseInteractAction,
-					ETriggerEvent::Triggered,
+					ETriggerEvent::Started,
 					this,
 					&APlayerCharacter::MouseInput
 				);
@@ -305,9 +313,67 @@ void APlayerCharacter::Look(const FInputActionValue& value)
 	}
 }
 
-void APlayerCharacter::MouseInput(const FInputActionValue& value)
+void APlayerCharacter::MouseInput(const FInputActionValue& Value)
 {
-
+	UE_LOG(LogTemp, Warning, TEXT("[PC] Interact Pressed"));
+	Server_Interact();
 }
 
+void APlayerCharacter::Server_Interact_Implementation()
+{
+	ALever* BestLever = nullptr;
+	float BestDist = 200.f; // 상호작용 거리
+
+	for (TActorIterator<ALever> It(GetWorld()); It; ++It)
+	{
+		ALever* Lever = *It;
+
+		float Dist = FVector::Dist(
+			GetActorLocation(),
+			Lever->GetActorLocation()
+		);
+
+		if (Dist < BestDist)
+		{
+			BestDist = Dist;
+			BestLever = Lever;
+		}
+	}
+
+	if (BestLever)
+	{
+		BestLever->Server_TryInteract(this);
+	}
+}
+
+
+void APlayerCharacter::OnInteractOverlapBegin(
+	UPrimitiveComponent*,
+	AActor* OtherActor,
+	UPrimitiveComponent*,
+	int32,
+	bool,
+	const FHitResult&
+)
+{
+	if (ALever* Lever = Cast<ALever>(OtherActor))
+	{
+		OverlappingLevers.AddUnique(Lever);
+		UE_LOG(LogTemp, Warning, TEXT("[PC] Lever Added: %s"), *GetNameSafe(Lever));
+	}
+}
+
+void APlayerCharacter::OnInteractOverlapEnd(
+	UPrimitiveComponent*,
+	AActor* OtherActor,
+	UPrimitiveComponent*,
+	int32
+)
+{
+	if (ALever* Lever = Cast<ALever>(OtherActor))
+	{
+		OverlappingLevers.Remove(Lever);
+		UE_LOG(LogTemp, Warning, TEXT("[PC] Lever Removed: %s"), *GetNameSafe(Lever));
+	}
+}
 
