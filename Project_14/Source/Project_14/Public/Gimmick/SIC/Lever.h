@@ -16,8 +16,8 @@ class PROJECT_14_API ALever : public AActor
 public:
 	ALever();
 
-	void TryInteract(APlayerCharacter* Player);
-
+	UFUNCTION(Server, Reliable)
+	void Server_TryInteract(APlayerCharacter* Player);
 protected:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* LeverMesh;
@@ -45,6 +45,4 @@ protected:
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex
 	);
-	UFUNCTION(Server, Reliable)
-	void Server_TryInteract(APlayerCharacter* Player);
 };

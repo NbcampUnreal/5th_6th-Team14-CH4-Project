@@ -20,6 +20,7 @@ ALever::ALever()
 	InteractBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	InteractBox->SetCollisionResponseToAllChannels(ECR_Ignore);
 	InteractBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	InteractBox->SetGenerateOverlapEvents(true);
 
 	InteractBox->OnComponentBeginOverlap.AddDynamic(this, &ALever::OnOverlapBegin);
 	InteractBox->OnComponentEndOverlap.AddDynamic(this, &ALever::OnOverlapEnd);
@@ -35,10 +36,6 @@ void ALever::OnOverlapBegin(
 )
 {
 	UE_LOG(LogTemp, Error, TEXT("[Lever] Overlap Begin with %s"), *GetNameSafe(OtherActor));
-	if (OtherActor->IsA<APlayerCharacter>())
-	{
-		bPlayerOverlapping = true;
-	}
 }
 
 void ALever::OnOverlapEnd(
@@ -48,58 +45,53 @@ void ALever::OnOverlapEnd(
 	int32
 )
 {
-	if (OtherActor->IsA<APlayerCharacter>())
-	{
-		bPlayerOverlapping = false;
-	}
-}
-
-void ALever::TryInteract(APlayerCharacter* Player)
-{
-	if (!bPlayerOverlapping)
-		return;
-
-	//  클라든 서버든 무조건 서버 함수 호출
-	Server_TryInteract(Player);
+	UE_LOG(LogTemp, Error, TEXT("[Lever] Overlap End with %s"), *GetNameSafe(OtherActor));
 }
 
 void ALever::Server_TryInteract_Implementation(APlayerCharacter* Player)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[Lever] Activated (Server)"));
+	UE_LOG(LogTemp, Error, TEXT("[Lever][Server] TryInteract"));
 
-	// DragonBridge 전부 실행
+	if (!IsValid(Player))
+		return;
+
+	if (!InteractBox->IsOverlappingActor(Player))
 	{
-		TArray<AActor*> Bridges;
-		UGameplayStatics::GetAllActorsOfClass(
-			GetWorld(),
-			ADragonBridge::StaticClass(),
-			Bridges
-		);
+		UE_LOG(LogTemp, Error, TEXT("[Lever][Server] NOT overlapping"));
+		return;
+	}
 
-		for (AActor* A : Bridges)
+	UE_LOG(LogTemp, Error, TEXT("[Lever][Server] ACTIVATED"));
+
+	// DragonBridge
+	TArray<AActor*> Bridges;
+	UGameplayStatics::GetAllActorsOfClass(
+		GetWorld(),
+		ADragonBridge::StaticClass(),
+		Bridges
+	);
+
+	for (AActor* A : Bridges)
+	{
+		if (ADragonBridge* Bridge = Cast<ADragonBridge>(A))
 		{
-			if (ADragonBridge* Bridge = Cast<ADragonBridge>(A))
-			{
-				Bridge->ToggleState();
-			}
+			Bridge->ToggleState();
 		}
 	}
 
-	// DragonBridgeJump 전부 실행
-	{
-		TArray<AActor*> JumpBridges;
-		UGameplayStatics::GetAllActorsOfClass(
-			GetWorld(),
-			ADragonBridgeJump::StaticClass(),
-			JumpBridges
-		);
+	// DragonBridgeJump
+	TArray<AActor*> JumpBridges;
+	UGameplayStatics::GetAllActorsOfClass(
+		GetWorld(),
+		ADragonBridgeJump::StaticClass(),
+		JumpBridges
+	);
 
-		for (AActor* A : JumpBridges)
+	for (AActor* A : JumpBridges)
+	{
+		if (ADragonBridgeJump* Jump = Cast<ADragonBridgeJump>(A))
 		{
-			if (ADragonBridgeJump* Jump = Cast<ADragonBridgeJump>(A))
-			{
-				Jump->ToggleState();
-			}
+			Jump->ToggleState();
 		}
 	}
 }
