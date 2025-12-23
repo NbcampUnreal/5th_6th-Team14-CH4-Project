@@ -44,10 +44,6 @@ protected:
 
 	TArray<FVector> Targets;
 
-	// 시작 중복 방지
-	UPROPERTY()
-	bool bHasStarted = false;
-
 public:
 	// 기존: 다리 시작
 	UFUNCTION(BlueprintCallable)

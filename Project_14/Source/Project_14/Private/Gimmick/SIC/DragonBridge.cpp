@@ -52,11 +52,6 @@ void ADragonBridge::BeginPlay()
 
 void ADragonBridge::ToggleState()
 {
-	if (bHasStarted)
-		return;
-
-	bHasStarted = true;
-
 	if (HasAuthority())
 	{
 		ToggleState_Internal();

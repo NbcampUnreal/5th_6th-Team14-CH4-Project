@@ -44,10 +44,6 @@ protected:
 
 	TArray<FVector> Targets;
 
-	// 시작 중복 방지
-	UPROPERTY()
-	bool bHasStarted = false;
-
 	// 정지 상태
 	UPROPERTY(Replicated)
 	bool bIsStopped = false;
