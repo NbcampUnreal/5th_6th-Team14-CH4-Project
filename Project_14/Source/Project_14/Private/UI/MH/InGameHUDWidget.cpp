@@ -15,6 +15,11 @@ void UInGameHUDWidget::NativeTick(const FGeometry& MyGeometry,float InDeltaTime)
 
 	const float PlayTime = GS->PlayTime;
 	Text_PlayTime->SetText(ConvertSecondsToText(PlayTime));
+
+	if (Text_Tutorial)
+	{
+		Text_Tutorial->SetText(GS->GetCurrentGuideText());
+	}
 }
 
 FText UInGameHUDWidget::ConvertSecondsToText(float Time) const
