@@ -79,13 +79,13 @@ void UUW_LobbyWaitingRoom::UpdateRoomUI(const FRoomInfo& Info)
 	}
 	if (StartGameButton != nullptr)
 	{
-		FString MyName ="";
+		int32 PlayerID = -1;
 		if (GetOwningPlayer() && GetOwningPlayer()->PlayerState)
 		{
-			MyName = GetOwningPlayer()->PlayerState->GetPlayerName();
+			PlayerID = GetOwningPlayer()->PlayerState->GetPlayerId();
 		}
 
-		if (MyName == Info.HostName)
+		if (PlayerID == Info.HostPlayerID)
 		{
 			StartGameButton->SetVisibility(ESlateVisibility::Visible);
 		}else
@@ -100,7 +100,8 @@ void UUW_LobbyWaitingRoom::OnStartGameClicked()
 	ALobbyGameStateBase* GS = GetWorld()->GetGameState<ALobbyGameStateBase>();
 	if (ALobbyPlayerController* PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
 	{
-		PC->Server_StartGame(CurrentRoomID);
+		//PC->Server_StartGame(CurrentRoomID);
+		PC->ServerRPC_StartGame();
 	}
 }
 
@@ -109,7 +110,8 @@ void UUW_LobbyWaitingRoom::OnLeaveClicked()
 	//RemoveFromParent();
 	if (ALobbyPlayerController* PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
 	{
-		PC->Server_LeaveRoom(CurrentRoomID);
+		//PC->Server_LeaveRoom(CurrentRoomID);
+		PC->ServerRPC_LeaveRoom(CurrentRoomID);
 	}
 	
 }

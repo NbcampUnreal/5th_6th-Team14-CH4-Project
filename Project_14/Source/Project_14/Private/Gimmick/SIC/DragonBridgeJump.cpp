@@ -52,10 +52,6 @@ void ADragonBridgeJump::BeginPlay()
 
 void ADragonBridgeJump::ToggleState()
 {
-	if (bHasStarted)
-		return;
-
-	bHasStarted = true;
 	bIsStopped = false;
 
 	if (HasAuthority())

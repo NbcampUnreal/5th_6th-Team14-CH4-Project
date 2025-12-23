@@ -19,7 +19,11 @@ class PROJECT_14_API ALobbyGameModeBase : public AGameModeBase
 public:
 	ALobbyGameModeBase();
 
+	//삭제 예정==============================================
 	UPROPERTY(EditAnywhere)
 	FString GameServerIP;
 	void StartGameForRoom(const FRoomInfo& RoomData);
+//=================================================================
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void Logout(AController* Exiting) override;
 };

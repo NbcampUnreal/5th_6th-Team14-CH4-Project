@@ -6,6 +6,7 @@
 #include "Chatting/ChatInput.h"
 #include "GameFramework/PlayerState.h"
 #include "GameManager/BaseGameStateBase.h"
+#include "GameManager/ProjectGameInstance.h"
 
 ABasePlayerController::ABasePlayerController()
 {
@@ -15,7 +16,19 @@ void ABasePlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (IsLocalController() && ChatInputWidgetClass)
+	if (IsLocalController() == false)
+	{
+		return;
+	}
+	if (UProjectGameInstance* GI = Cast<UProjectGameInstance>(GetGameInstance()))
+	{
+		FString PlayerName = GI->PlayerName;
+		if (!PlayerName.IsEmpty())
+		{
+			ServerRPC_SetPlayerName(PlayerName);
+		}
+	}
+	if (ChatInputWidgetClass)
 	{
 		ChatInputWidgetInstance = CreateWidget<UChatInput>(this,ChatInputWidgetClass);
 		if (ChatInputWidgetInstance)
@@ -24,6 +37,20 @@ void ABasePlayerController::BeginPlay()
 		}
 	}
 	
+}
+
+void ABasePlayerController::ServerRPC_SetPlayerName_Implementation(const FString& Name)
+{
+	if (PlayerState)
+	{
+		PlayerState->SetPlayerName(Name);
+		UE_LOG(LogTemp,Log,TEXT("Player name: %s"),*Name);
+	}
+}
+
+bool ABasePlayerController::ServerRPC_SetPlayerName_Validate(const FString& Name)
+{
+	return true;
 }
 
 
