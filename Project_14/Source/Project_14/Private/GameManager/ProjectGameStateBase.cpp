@@ -14,6 +14,11 @@ void AProjectGameStateBase::Tick(float DeltaSeconds)
     PlayTime += DeltaSeconds;
 }
 
+TArray<APlayerState*> AProjectGameStateBase::GetPlayersForChat(APlayerState* SenderPS)
+{
+    return PlayerArray;
+}
+
 void AProjectGameStateBase::AddSelectedType(ECharacterType Type)
 {
     if (HasAuthority())
@@ -23,6 +28,30 @@ void AProjectGameStateBase::AddSelectedType(ECharacterType Type)
             SelectedCharacterTypes.Add(Type);
         }
     }
+}
+
+void AProjectGameStateBase::OnMapCleared()
+{
+    if (HasAuthority())
+    {
+        ClearedMapCount++;
+    }
+}
+
+FText AProjectGameStateBase::GetCurrentGuideText() const
+{
+    if (!LevelGuideDataAsset)
+        return FText::GetEmpty();
+
+    for (const FLevelGuideData& Data : LevelGuideDataAsset->GuideDatas)
+    {
+        if (Data.MapClearIndex == ClearedMapCount)
+        {
+            return Data.GuideText;
+        }
+    }
+
+    return FText::GetEmpty();
 }
 
 void AProjectGameStateBase::OnRep_SelectedTypes()

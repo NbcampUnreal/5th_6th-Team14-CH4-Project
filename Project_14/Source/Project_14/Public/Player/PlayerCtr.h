@@ -5,13 +5,14 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "PlayerCharacter.h"
+#include "Player/BasePlayerController.h"
 #include "PlayerCtr.generated.h"
 
 class UInputMappingContext;
 class UInputAction;
 
 UCLASS()
-class PROJECT_14_API APlayerCtr : public APlayerController
+class PROJECT_14_API APlayerCtr : public ABasePlayerController
 {
 	GENERATED_BODY()
 	
