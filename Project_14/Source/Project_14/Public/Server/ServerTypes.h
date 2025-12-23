@@ -22,6 +22,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room Info")
 	FString HostName = TEXT("");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room Info")
+	int32 HostPlayerID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room Info")
+	int32 AssingedServerIndex = -1;
 	
 	UPROPERTY(BlueprintReadOnly)
 	TArray<ALobbyPlayerState*> MemberPlayerStates;
@@ -40,6 +46,29 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room Info")
 	FString MapName = TEXT("MainLevel");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room Info")
+	bool bIsGameStarting = false;
+};
+
+USTRUCT(BlueprintType)
+struct FGameServerInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Server Info")
+	FString IPAddress;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Server Info")
+	int32 Port;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Server Info")
+	bool bIsBusy;
+
+	FGameServerInfo(): IPAddress(TEXT("127.0.0.1")),Port(7777),bIsBusy(false){}
+	FGameServerInfo(FString InIP, int32 InPort): IPAddress(InIP),Port(InPort), bIsBusy(false){}
+
+	
 };
 
 

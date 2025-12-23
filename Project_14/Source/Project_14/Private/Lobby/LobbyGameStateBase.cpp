@@ -1,5 +1,20 @@
 #include "Lobby/LobbyGameStateBase.h"
+
+#include "Lobby/LobbyPlayerController.h"
+#include "Lobby/LobbyPlayerState.h"
 #include "Net/UnrealNetwork.h" 
+
+
+#define NET_LOG(Format, ...) UE_LOG(LogTemp, Warning, TEXT("[%s] %s"), \
+HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"), \
+*FString::Printf(Format, ##__VA_ARGS__))
+
+void ALobbyGameStateBase::BeginPlay()
+{
+	Super::BeginPlay();
+	InitializeServerList();
+}
+
 
 
 void ALobbyGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -7,13 +22,36 @@ void ALobbyGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(ALobbyGameStateBase, RoomList);
-	//DOREPLIFETIME(ALobbyGameStateBase, GameServerIP);
+	DOREPLIFETIME(ALobbyGameStateBase, GameServerList);
+	
 }
 
 
 TArray<APlayerState*> ALobbyGameStateBase::GetPlayersForChat(APlayerState* SenderPS)
 {
-	return Super::GetPlayersForChat(SenderPS);
+	TArray<APlayerState*> TargetPlayers;
+	ALobbyPlayerState* LobbySenderPS = Cast<ALobbyPlayerState>(SenderPS);
+	if (IsValid(LobbySenderPS) == false)
+	{
+		return TargetPlayers;
+	}
+	if (LobbyUsers.Contains(SenderPS) == true)
+	{
+		return LobbyUsers;
+	}
+	for (FRoomInfo room : RoomList)
+	{
+		if (room.MemberPlayerStates.Contains(LobbySenderPS))
+		{
+			for (auto MemberPS : room.MemberPlayerStates)
+			{
+				TargetPlayers.Add(MemberPS);
+			}
+		}
+	}
+	
+	return TargetPlayers;
+	
 }
 
 void ALobbyGameStateBase::AddRoom(FRoomInfo NewRoom)
@@ -27,6 +65,198 @@ void ALobbyGameStateBase::AddRoom(FRoomInfo NewRoom)
 	}
 	
 	UE_LOG(LogTemp, Log, TEXT("Room Added! ID: %d, Name: %s"), NewRoom.RoomID, *NewRoom.RoomName);
+}
+
+void ALobbyGameStateBase::AddLobbyUser(APlayerState* NewUser)
+{
+	LobbyUsers.AddUnique(NewUser);
+}
+
+void ALobbyGameStateBase::ProcessPlayerLogout(APlayerState* ExitingPS)
+{
+	if (LobbyUsers.Contains(ExitingPS) == true)
+	{
+		LobbyUsers.Remove(ExitingPS);
+		return;
+	}
+	ALobbyPlayerState* LobbyExitingPS = Cast<ALobbyPlayerState>(ExitingPS);
+	if (IsValid(LobbyExitingPS) == false)
+	{
+		return;
+	}
+	for (int32 i = RoomList.Num() - 1; i >= 0; --i)
+	{
+		if (RoomList[i].MemberPlayerStates.Contains(LobbyExitingPS) == true)
+		{
+			RoomList[i].MemberPlayerStates.Remove(LobbyExitingPS);
+
+			if (RoomList[i].MemberPlayerStates.Num() == 0)
+			{
+				int32 ServerIndex = RoomList[i].AssingedServerIndex;
+				if (RoomList[i].bIsGameStarting == false)
+				{
+					SetServerBusyStatus(ServerIndex, false);
+				}
+				RoomList.RemoveAt(i);
+			}
+			if (OnRoomListUpdated.IsBound())
+			{
+				OnRoomListUpdated.Broadcast();
+			}
+			break;
+		}
+	}
+}
+
+int32 ALobbyGameStateBase::GetRoomIndexByID(int32 InRoomID)
+{
+	for (int32 i = 0; i < RoomList.Num(); ++i)
+	{
+		if (RoomList[i].RoomID == InRoomID)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+int32 ALobbyGameStateBase::CreateRoom(ALobbyPlayerState* Host, FString RoomName)
+{
+	int32 ServerIndex = FindAvailableServerIndex();
+	if (ServerIndex == -1)
+	{
+		return -1;
+	}
+	SetServerBusyStatus(ServerIndex, true);
+
+	FRoomInfo NewRoom;
+	NewRoom.RoomName = RoomName;
+	NewRoom.HostPlayerID = Host->GetPlayerId();
+	NewRoom.AssingedServerIndex = ServerIndex;
+	NewRoom.MemberPlayerStates.AddUnique(Host);
+	NewRoom.HostName = Host->GetPlayerName();
+	NewRoom.RoomID = RoomIDCounter++;
+
+	RoomList.Add(NewRoom);
+	
+	LobbyUsers.Remove(Host);
+	
+
+	if (OnRoomListUpdated.IsBound())
+	{
+		OnRoomListUpdated.Broadcast();
+	}
+	return NewRoom.RoomID;
+}
+
+bool ALobbyGameStateBase::JoinRoom(int32 RoomID, ALobbyPlayerState* Joiner)
+{
+	//NET_LOG(TEXT("[SERVER] GameState::JoinRoom Called. Index: %d"),RoomID);
+	int32 RealRoomIndex = GetRoomIndexByID(RoomID);
+	
+	if (RealRoomIndex != -1)
+	{
+		if (RoomList[RealRoomIndex].MaxPlayers <= RoomList[RealRoomIndex].MemberPlayerStates.Num())
+		{
+			//NET_LOG(TEXT("[SERVER] GameState::JoinRoom Failed. Full Room"));
+
+			return false;
+		}
+		RoomList[RealRoomIndex].MemberPlayerStates.AddUnique(Joiner);
+		LobbyUsers.Remove(Joiner);
+
+		if (OnRoomListUpdated.IsBound())
+		{
+			OnRoomListUpdated.Broadcast();
+		}
+		//NET_LOG(TEXT("[SERVER] GameState::JoinRoom Success. Member Count: %d"),RoomList[RoomID].MemberPlayerStates.Num());
+
+		
+		return true;
+	}
+	//NET_LOG(TEXT("[SERVER] GameState::JoinRoom Failed. Invalid Index."));
+
+	return false;
+}
+
+bool ALobbyGameStateBase::LeaveRoom(ALobbyPlayerState* Leaver)
+{
+	if (IsValid(Leaver) == false)
+	{
+		return false;
+	}
+	for (int32 i = RoomList.Num() - 1; i >= 0; --i)
+	{
+		if (RoomList[i].MemberPlayerStates.Contains(Leaver) == true)
+		{
+			FRoomInfo& TargetRoom = RoomList[i];
+			TargetRoom.MemberPlayerStates.Remove(Leaver);
+			LobbyUsers.AddUnique(Leaver);
+			if (TargetRoom.MemberPlayerStates.Num() == 0)
+			{
+				int32 ServerID = RoomList[i].AssingedServerIndex;
+				SetServerBusyStatus(ServerID, false);
+				RoomList.RemoveAt(ServerID);
+			}else if (TargetRoom.HostPlayerID == Leaver->GetPlayerId())
+			{
+				for (ALobbyPlayerState* MemberPS: TargetRoom.MemberPlayerStates)
+				{
+					LobbyUsers.AddUnique(MemberPS);
+					if (ALobbyPlayerController* MemberPC = Cast<ALobbyPlayerController>(MemberPS->GetOwner()))
+					{
+						MemberPC->ClientRPC_ShowLobbyUI();
+					}
+				}
+				SetServerBusyStatus(TargetRoom.AssingedServerIndex, false);
+				RoomList.RemoveAt(i);
+			}
+			if (OnRoomListUpdated.IsBound())
+			{
+				OnRoomListUpdated.Broadcast();
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
+void ALobbyGameStateBase::SetRoomGameStarting(int32 RoomID)
+{
+	int32 RoomIndex = GetRoomIndexByID(RoomID);
+	if (RoomIndex != -1)
+	{
+		RoomList[RoomIndex].bIsGameStarting = true;
+	}
+}
+
+int32 ALobbyGameStateBase::FindAvailableServerIndex()
+{
+	for (int32 i =0; i <GameServerList.Num(); ++i)
+	{
+		if (!GameServerList[i].bIsBusy)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+void ALobbyGameStateBase::SetServerBusyStatus(int32 ServerID, bool bBusy)
+{
+	if (GameServerList.IsValidIndex(ServerID) == true)
+	{
+		GameServerList[ServerID].bIsBusy = bBusy;
+	}
+}
+
+void ALobbyGameStateBase::InitializeServerList()
+{
+	if (HasAuthority())
+	{
+		GameServerList.Empty();
+		GameServerList.Add(FGameServerInfo(TEXT("127.0.0.1"),7778));
+		GameServerList.Add(FGameServerInfo(TEXT("127.0.0.1"),7779));
+	}
 }
 
 void ALobbyGameStateBase::OnRep_RoomList()

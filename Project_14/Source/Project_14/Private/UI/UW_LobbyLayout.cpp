@@ -90,10 +90,8 @@ void UUW_LobbyLayout::OnCreateButtonClicked()
 
 	if (ALobbyPlayerController* PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
 	{
-		FRoomInfo NewRoom;
-		NewRoom.RoomName = RoomName;
-		//NewRoom.MaxPlayers = 2;
-		PC->Server_CreateRoom(NewRoom);
+		//PC->Server_CreateRoom(NewRoom);
+		PC->ServerRPC_CreateRoom(RoomName);
 	}
 }
 

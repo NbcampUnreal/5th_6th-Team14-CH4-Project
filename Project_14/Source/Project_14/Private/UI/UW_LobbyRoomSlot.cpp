@@ -27,7 +27,6 @@ void UUW_LobbyRoomSlot::NativeOnInitialized()
 
 void UUW_LobbyRoomSlot::SetRoomInfo(const FRoomInfo& Info)
 {
-	TargetRoomID = Info.RoomID;
 
 	if (RoomNameText != nullptr)
 	{
@@ -39,15 +38,17 @@ void UUW_LobbyRoomSlot::SetRoomInfo(const FRoomInfo& Info)
 	}
 	if (PlayerCountText != nullptr)
 	{
-		FString CountStr = FString::Printf(TEXT("%d / %d"), Info.CurrentPlayers, Info.MaxPlayers);
+		FString CountStr = FString::Printf(TEXT("%d / %d"), Info.MemberPlayerStates.Num(), Info.MaxPlayers);
 		PlayerCountText->SetText(FText::FromString(CountStr));
 	}
+	TargetRoomID = Info.RoomID;
 }
 
 void UUW_LobbyRoomSlot::OnJoinButtonClicked()
 {
 	if (ALobbyPlayerController* PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
 	{
-		PC->Server_JoinRoom(TargetRoomID);
+		//PC->Server_JoinRoom(TargetRoomID);
+		PC->ServerRPC_JoinRoom(TargetRoomID);
 	}
 }
