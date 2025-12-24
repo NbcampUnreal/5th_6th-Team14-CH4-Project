@@ -4,6 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
+#include "HttpServerModule.h"
+#include "IHttpRouter.h"
+#include "HttpModule.h"
+#include "Interfaces/IHttpRequest.h"
+#include "Interfaces/IHttpResponse.h"
 #include "BaseGameStateBase.generated.h"
 
 /**
@@ -13,7 +18,30 @@ UCLASS()
 class PROJECT_14_API ABaseGameStateBase : public AGameStateBase
 {
 	GENERATED_BODY()
-
-	public:
+#pragma region chat
+public:
+	//chat
 	virtual TArray<APlayerState*> GetPlayersForChat(APlayerState* SenderPS);
+#pragma endregion
+
+#pragma region lobby server
+public:
+	//lobby server (http listener)
+	void StartHttpListener(int32 port = 8081);
+
+protected:
+	//로비서버용 virtual func
+	virtual void OnGameServerFinished(int32 ServerPort);
+
+	private:
+	//내부 콜백 함수
+	bool HandleGameEndRequest(const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete);
+#pragma endregion
+
+#pragma region game server
+
+public:
+	void SendGameEndToLobby(FString LobbyURL, int32 MyPort);
+#pragma endregion
+	
 };

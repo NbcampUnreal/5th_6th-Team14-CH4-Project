@@ -13,6 +13,12 @@ void ALobbyGameStateBase::BeginPlay()
 {
 	Super::BeginPlay();
 	InitializeServerList();
+	if (HasAuthority())
+	{
+		InitializeServerList();
+		
+		StartHttpListener(8081); 
+	}
 }
 
 
@@ -196,7 +202,7 @@ bool ALobbyGameStateBase::LeaveRoom(ALobbyPlayerState* Leaver)
 			{
 				int32 ServerID = RoomList[i].AssingedServerIndex;
 				SetServerBusyStatus(ServerID, false);
-				RoomList.RemoveAt(ServerID);
+				RoomList.RemoveAt(i);
 			}else if (TargetRoom.HostPlayerID == Leaver->GetPlayerId())
 			{
 				for (ALobbyPlayerState* MemberPS: TargetRoom.MemberPlayerStates)
@@ -264,5 +270,22 @@ void ALobbyGameStateBase::OnRep_RoomList()
 	if (OnRoomListUpdated.IsBound())
 	{
 		OnRoomListUpdated.Broadcast();
+	}
+}
+
+void ALobbyGameStateBase::OnGameServerFinished(int32 ServerPort)
+{
+	
+	UE_LOG(LogTemp, Warning, TEXT("[Lobby] Server Finished: %d. Release Busy Status."), ServerPort);
+
+	for (int32 i = 0; i < GameServerList.Num(); ++i)
+	{
+		if (GameServerList[i].Port == ServerPort)
+		{
+			SetServerBusyStatus(i, false); 
+			
+			if (OnRoomListUpdated.IsBound()) OnRoomListUpdated.Broadcast();
+			break;
+		}
 	}
 }
