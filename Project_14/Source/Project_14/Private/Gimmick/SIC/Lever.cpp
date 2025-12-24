@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Gimmick/SIC/DragonBridge.h"
 #include "Gimmick/SIC/DragonBridgeJump.h"
+#include "Gimmick/SIC/MovingBlock.h"
 
 ALever::ALever()
 {
@@ -62,36 +63,56 @@ void ALever::Server_TryInteract_Implementation(APlayerCharacter* Player)
 	}
 
 	UE_LOG(LogTemp, Error, TEXT("[Lever][Server] ACTIVATED"));
-
-	// DragonBridge
-	TArray<AActor*> Bridges;
-	UGameplayStatics::GetAllActorsOfClass(
-		GetWorld(),
-		ADragonBridge::StaticClass(),
-		Bridges
-	);
-
-	for (AActor* A : Bridges)
+	if(bIsDragonBridge)
 	{
-		if (ADragonBridge* Bridge = Cast<ADragonBridge>(A))
+		// DragonBridge
+		TArray<AActor*> Bridges;
+		UGameplayStatics::GetAllActorsOfClass(
+			GetWorld(),
+			ADragonBridge::StaticClass(),
+			Bridges
+		);
+
+		for (AActor* A : Bridges)
 		{
-			Bridge->ToggleState();
+			if (ADragonBridge* Bridge = Cast<ADragonBridge>(A))
+			{
+				Bridge->ToggleState();
+			}
+		}
+
+		// DragonBridgeJump
+		TArray<AActor*> JumpBridges;
+		UGameplayStatics::GetAllActorsOfClass(
+			GetWorld(),
+			ADragonBridgeJump::StaticClass(),
+			JumpBridges
+		);
+
+		for (AActor* A : JumpBridges)
+		{
+			if (ADragonBridgeJump* Jump = Cast<ADragonBridgeJump>(A))
+			{
+				Jump->ToggleState();
+			}
 		}
 	}
-
-	// DragonBridgeJump
-	TArray<AActor*> JumpBridges;
-	UGameplayStatics::GetAllActorsOfClass(
-		GetWorld(),
-		ADragonBridgeJump::StaticClass(),
-		JumpBridges
-	);
-
-	for (AActor* A : JumpBridges)
+	else
 	{
-		if (ADragonBridgeJump* Jump = Cast<ADragonBridgeJump>(A))
+		// MovingBlock
+		TArray<AActor*> MBlock;
+		UGameplayStatics::GetAllActorsOfClass(
+			GetWorld(),
+			AMovingBlock::StaticClass(),
+			MBlock
+		);
+
+		for (AActor* A : MBlock)
 		{
-			Jump->ToggleState();
+			if (AMovingBlock* MB = Cast<AMovingBlock>(A))
+			{
+				MB->ToggleState();
+			}
 		}
 	}
 }

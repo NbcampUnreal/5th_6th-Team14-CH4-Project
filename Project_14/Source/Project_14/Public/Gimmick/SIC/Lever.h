@@ -18,6 +18,8 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void Server_TryInteract(APlayerCharacter* Player);
+	UPROPERTY(EditAnywhere)
+	bool bIsDragonBridge = false;
 protected:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* LeverMesh;
