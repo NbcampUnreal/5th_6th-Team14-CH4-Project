@@ -24,4 +24,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void SpawnSelectedCharacter(APlayerController* PC, ECharacterType Type);
+
+	void TryStartGame();
 };

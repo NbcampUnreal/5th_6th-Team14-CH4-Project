@@ -15,8 +15,9 @@ class PROJECT_14_API AProjectGameStateBase : public ABaseGameStateBase
 {
 	GENERATED_BODY()
 	
-    AProjectGameStateBase();
 public:
+    AProjectGameStateBase();
+
     virtual void Tick(float DeltaTime) override;
     virtual TArray<APlayerState*> GetPlayersForChat(APlayerState* SenderPS) override;
 
@@ -28,9 +29,6 @@ public:
     UPROPERTY(BlueprintAssignable)
     FOnCharacterTypeSelected OnCharacterTypeSelected;
 
-    UPROPERTY(BlueprintReadOnly, Replicated)
-    float PlayTime = 0.f;
-
     UPROPERTY(BlueprintReadOnly)
     int32 ClearedMapCount = 0;
 
@@ -41,6 +39,19 @@ public:
 
     UFUNCTION(BlueprintCallable)
     FText GetCurrentGuideText() const;
+
+    UPROPERTY(Replicated , BlueprintReadWrite)
+    bool bIsInGameStarted = false;
+
+    void StartGame();
+
+    float GetPlayTime() const;
+
+    UPROPERTY(Replicated, BlueprintReadWrite)
+    float GameStartTime = -1.f;
+
+    UPROPERTY(Replicated, BlueprintReadWrite)
+    float ClearPlayTime = -1.f;
 
 protected:
 

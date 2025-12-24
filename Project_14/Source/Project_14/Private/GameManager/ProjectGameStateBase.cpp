@@ -11,7 +11,23 @@ AProjectGameStateBase::AProjectGameStateBase()
 void AProjectGameStateBase::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
-    PlayTime += DeltaSeconds;
+}
+
+void AProjectGameStateBase::StartGame()
+{
+    if (!HasAuthority()) return;
+
+    if (GameStartTime < 0.f)
+    {
+        GameStartTime = GetWorld()->GetTimeSeconds();
+    }
+}
+float AProjectGameStateBase::GetPlayTime() const
+{
+    if (GameStartTime < 0.f)
+        return 0.f;
+
+    return GetWorld()->GetTimeSeconds() - GameStartTime;
 }
 
 TArray<APlayerState*> AProjectGameStateBase::GetPlayersForChat(APlayerState* SenderPS)
@@ -36,6 +52,12 @@ void AProjectGameStateBase::OnMapCleared()
     {
         ClearedMapCount++;
     }
+
+    /*전부 클리어 할때 이로직이 필요함
+    if (ClearPlayTime < 0.f)
+    {
+        ClearPlayTime = GetPlayTime();
+    }*/
 }
 
 FText AProjectGameStateBase::GetCurrentGuideText() const
@@ -64,5 +86,6 @@ void AProjectGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
     DOREPLIFETIME(AProjectGameStateBase, SelectedCharacterTypes);
-    DOREPLIFETIME(AProjectGameStateBase, PlayTime);
+    DOREPLIFETIME(AProjectGameStateBase, GameStartTime);
+    DOREPLIFETIME(AProjectGameStateBase, ClearPlayTime);
 }
