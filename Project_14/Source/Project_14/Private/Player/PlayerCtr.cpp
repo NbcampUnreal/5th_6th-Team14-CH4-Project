@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "UI/MH/InGameHUDWidget.h"
 #include "GameManager/ProjectGameModeBase.h"
+#include "GameManager/ProjectGameStateBase.h"
 
 APlayerCtr::APlayerCtr()
 	:InputMappingContext(nullptr),
@@ -57,15 +58,17 @@ void APlayerCtr::BeginPlay()
 
 void APlayerCtr::Server_SelectCharacterType_Implementation(ECharacterType Type)
 {
-	AProjectGameModeBase* GM = Cast<AProjectGameModeBase>(
-		UGameplayStatics::GetGameMode(this));
+	AProjectGameStateBase* GS = GetWorld()->GetGameState<AProjectGameStateBase>();
+	if (!GS) return;
 
-	if (GM)
-	{
-		GM->SpawnSelectedCharacter(this, Type);
-	}
+	GS->AddSelectedType(Type);
 
-	Client_SetGameInputMode();
+	AProjectGameModeBase* GM = GetWorld()->GetAuthGameMode<AProjectGameModeBase>();
+	if (!GM) return;
+
+	GM->SpawnSelectedCharacter(this, Type);
+
+	GM->TryStartGame();
 }
 
 void APlayerCtr::Client_SetGameInputMode_Implementation()

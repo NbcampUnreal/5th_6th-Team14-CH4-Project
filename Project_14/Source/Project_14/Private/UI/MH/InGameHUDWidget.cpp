@@ -13,8 +13,14 @@ void UInGameHUDWidget::NativeTick(const FGeometry& MyGeometry,float InDeltaTime)
 	if (!GS || !Text_PlayTime)
 		return;
 
-	const float PlayTime = GS->PlayTime;
+	const float PlayTime = GS->GetPlayTime();
 	Text_PlayTime->SetText(ConvertSecondsToText(PlayTime));
+
+	if (Text_ClearTime && GS->ClearPlayTime >= 0.f)
+	{
+		Text_ClearTime->SetText(
+			ConvertSecondsToText(GS->ClearPlayTime));
+	}
 
 	if (Text_Tutorial)
 	{

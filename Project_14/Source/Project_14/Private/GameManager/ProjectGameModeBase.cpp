@@ -17,17 +17,14 @@ void AProjectGameModeBase::SpawnSelectedCharacter(APlayerController* PC, ECharac
         return;
     }
 
+    if (PC->GetPawn())
+        return;
+
     AProjectGameStateBase* GS = GetGameState<AProjectGameStateBase>();
     if (!GS)
     {
         return;
     }
-
-    if (GS->SelectedCharacterTypes.Contains(Type))
-    {
-        return;
-    }
-    GS->AddSelectedType(Type);
 
     AActor* Start = FindPlayerStart(PC);
     if (!Start) return;
@@ -59,4 +56,18 @@ void AProjectGameModeBase::SpawnSelectedCharacter(APlayerController* PC, ECharac
 
     PC->Possess(NewChar);
     NewChar->CharacterType = Type;
+}
+
+void AProjectGameModeBase::TryStartGame()
+{
+    AProjectGameStateBase* GS = GetGameState<AProjectGameStateBase>();
+    if (!GS) return;
+
+    const int32 PlayerCount = GameState->PlayerArray.Num();
+    const int32 SelectedCount = GS->SelectedCharacterTypes.Num();
+
+    if (SelectedCount == PlayerCount)
+    {
+        GS->StartGame(); 
+    }
 }
