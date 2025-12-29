@@ -29,8 +29,8 @@ public:
     UPROPERTY(BlueprintAssignable)
     FOnCharacterTypeSelected OnCharacterTypeSelected;
 
-    UPROPERTY(BlueprintReadOnly)
-    int32 ClearedMapCount = 0;
+    UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly)
+    int32 ClearedMapCount;
 
     void OnMapCleared();
 
@@ -52,6 +52,8 @@ public:
 
     UPROPERTY(Replicated, BlueprintReadWrite)
     float ClearPlayTime = -1.f;
+
+    FString ClearTimeString;
 
 protected:
 
