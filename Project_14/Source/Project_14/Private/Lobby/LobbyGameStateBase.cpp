@@ -306,3 +306,61 @@ void ALobbyGameStateBase::OnServerStatusReported(int32 ServerPort, bool bIsIdle)
 		UE_LOG(LogTemp, Error, TEXT("[Lobby] Failed to find server with port: %d"), ServerPort);
 	}
 }
+
+void ALobbyGameStateBase::StartHttpListener(int32 Port)
+{
+	Super::StartHttpListener(Port);
+
+	if (!HasAuthority()) return;
+
+	FHttpServerModule& HttpServerModule = FHttpServerModule::Get();
+	TSharedPtr<IHttpRouter> HttpRouter = HttpServerModule.GetHttpRouter(Port);
+
+	if (!HttpRouter.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Lobby] Failed to get Router for Port %d"), Port);
+		return;
+	}
+
+	FHttpRequestHandler MatchResultHandler = FHttpRequestHandler::CreateLambda(
+	   [this](const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete) -> bool
+	   {
+		  return this->HandleGameResultRequest(Request, OnComplete);
+	   }
+	);
+
+	HttpRouter->BindRoute(FHttpPath(TEXT("/api/match_result")), EHttpServerRequestVerbs::VERB_POST, MatchResultHandler);
+
+	UE_LOG(LogTemp, Warning, TEXT("[Lobby] Additional Route Bound: /api/match_result"));
+}
+
+bool ALobbyGameStateBase::HandleGameResultRequest(const FHttpServerRequest& Request,
+	const FHttpResultCallback& OnComplete)
+{
+	FString BodyStr;
+	const TArray<uint8>& BodyData = Request.Body;
+	BodyStr.Append((const char*)BodyData.GetData(), BodyData.Num());
+
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(BodyStr);
+	TSharedPtr<FJsonObject> JsonObject;
+
+	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+	{
+		int32 Port = JsonObject->GetIntegerField(TEXT("Port"));
+
+		bool bIsIdle = true;
+		if (JsonObject->HasField(TEXT("IsIdle")))
+		{
+			bIsIdle = JsonObject->GetBoolField(TEXT("IsIdle"));
+		}
+		AsyncTask(ENamedThreads::GameThread, [this, Port, bIsIdle]()
+		{
+			OnServerStatusReported(Port,bIsIdle);
+		});
+
+		TUniquePtr<FHttpServerResponse> Response = FHttpServerResponse::Create(TEXT("Success"), TEXT("text/plain"));
+		OnComplete(MoveTemp(Response));
+		return true;
+	}
+	return false;
+}

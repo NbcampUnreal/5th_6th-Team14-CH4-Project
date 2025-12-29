@@ -36,7 +36,7 @@ void ABaseGameStateBase::StartHttpListener(int32 Port)
 		}
 	);
 
-	// /api/game_end 경로 바인딩
+	
 	HttpRouter->BindRoute(FHttpPath(TEXT("/api/server_status")), EHttpServerRequestVerbs::VERB_POST, RequestHandler);
 	HttpServerModule.StartAllListeners();
 	

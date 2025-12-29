@@ -27,7 +27,7 @@ public:
 #pragma region lobby server
 public:
 	//lobby server (http listener)
-	void StartHttpListener(int32 port = 8081);
+	virtual void StartHttpListener(int32 port = 8081);
 
 protected:
 	//로비서버용 virtual func
