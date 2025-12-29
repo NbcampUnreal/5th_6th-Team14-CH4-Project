@@ -37,7 +37,7 @@ void AStageGameModeBase::NotifyGameClear()
 	GetWorldTimerManager().SetTimer(EndGameTimerHandle, this, &AStageGameModeBase::ForceKickAllPlayers, KickAllPlayersTime, false);
 }
 
-void AStageGameModeBase::NotifyPlayerGiveUp(APlayerController* GivingUpPlayer)
+void AStageGameModeBase::NotifyPlayerGiveUp(APlayerController* GivingUpPlayer, EGameEndReason Reason)
 {
 	if (AStagePlayerController* GiveUpSPC = Cast<AStagePlayerController>(GivingUpPlayer))
 	{
@@ -52,7 +52,7 @@ void AStageGameModeBase::NotifyPlayerGiveUp(APlayerController* GivingUpPlayer)
 		AStagePlayerController* MemberSPC = Cast<AStagePlayerController>(it->Get());
 		if (MemberSPC && MemberSPC != GivingUpPlayer)
 		{
-			MemberSPC->ClientRPC_ShowGameEndUI(EGameEndReason::Forfeited);
+			MemberSPC->ClientRPC_ShowGameEndUI(Reason);
 		}
 	}
 	GetWorldTimerManager().SetTimer(EndGameTimerHandle,this,&AStageGameModeBase::ForceKickAllPlayers,KickAllPlayersTime,false);
@@ -107,6 +107,12 @@ void AStageGameModeBase::Logout(AController* Exiting)
 				}
 			}
 		}
+		if (!bIsGameEnded)
+		{
+			APlayerController* EPC = Cast<APlayerController>(Exiting);
+			NotifyPlayerGiveUp(EPC,EGameEndReason::Forfeited);
+		}
+		
 		UE_LOG(LogTemp, Warning, TEXT("[Server] not reload"));
 	}
 	
