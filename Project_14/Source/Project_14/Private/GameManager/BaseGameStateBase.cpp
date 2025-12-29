@@ -7,6 +7,7 @@
 #include "IHttpRouter.h"
 #include "HttpRouteHandle.h"
 #include "GameFramework/PlayerState.h"
+#include "Server/ServerTypes.h"
 
 TArray<APlayerState*> ABaseGameStateBase::GetPlayersForChat(APlayerState* SenderPS)
 {
@@ -46,6 +47,12 @@ void ABaseGameStateBase::StartHttpListener(int32 Port)
 void ABaseGameStateBase::OnServerStatusReported(int32 ServerPort, bool bIsIdle)
 {
 	UE_LOG(LogTemp, Warning, TEXT("[Base] Received GameEnd Signal from Port: %d (No Logic Implemented)"), ServerPort);
+}
+
+void ABaseGameStateBase::OnLeaderBoardUpdated(FRankRecord NewRank)
+{
+	UE_LOG(LogTemp, Warning, TEXT("[Base] Received LeaderBoardUpdate signal"));
+
 }
 
 bool ABaseGameStateBase::HandleServerStatusRequest(const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete)
@@ -117,8 +124,8 @@ void ABaseGameStateBase::SendGameResultToLobby(bool bIsCleard, float FloatClearT
 		{
 			PlayerNameArray.Add(MakeShareable(new FJsonValueString(PS->GetPlayerName())));
 		}
-		JsonObject->SetArrayField(TEXT("Player_Name"), PlayerNameArray);
-		JsonObject->SetStringField(TEXT("str_clear_time"), StringClearTime);
+		JsonObject->SetArrayField(TEXT("player_names"), PlayerNameArray);
+		//JsonObject->SetStringField(TEXT("str_clear_time"), StringClearTime);
 		JsonObject->SetNumberField(TEXT("num_clear_time"), FloatClearTime);
 		JsonObject->SetBoolField(TEXT("is_cleared"), bIsCleard);
 

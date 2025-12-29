@@ -11,6 +11,7 @@
 #include "Interfaces/IHttpResponse.h"
 #include "BaseGameStateBase.generated.h"
 
+struct FRankRecord;
 /**
  * 
  */
@@ -28,10 +29,11 @@ public:
 public:
 	//lobby server (http listener)
 	virtual void StartHttpListener(int32 port = 8081);
-
+	TArray<FRankRecord> LeaderBoard;
 protected:
 	//로비서버용 virtual func
 	virtual void OnServerStatusReported(int32 ServerPort, bool bIsIdle);
+	virtual void OnLeaderBoardUpdated(FRankRecord NewRank);
 
 	private:
 	//내부 콜백 함수

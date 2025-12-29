@@ -19,7 +19,18 @@ enum class EGameEndReason : uint8
 	GivenUp         // 내가 포기 버튼 누름 
 };
 
+USTRUCT(BlueprintType)
+struct FRankRecord
+{
+	GENERATED_BODY()
+	UPROPERTY(BlueprintReadOnly, Category="Rank")
+	TArray<FString> PlayerNames;
+	UPROPERTY(BlueprintReadOnly, Category="Rank")
+	float ClearTime;
 
+	FRankRecord():ClearTime(0.0f){}
+	FRankRecord(const TArray<FString>& InNames, const float InTime):PlayerNames(InNames),ClearTime(InTime){}
+};
 
 /**
  *방 정보 구조체
