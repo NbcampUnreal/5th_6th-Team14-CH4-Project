@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "BaseGameModeBase.h"
+#include "Server/ServerTypes.h"
 #include "StageGameModeBase.generated.h"
 
 /**
@@ -18,7 +19,7 @@ class PROJECT_14_API AStageGameModeBase : public ABaseGameModeBase
 	virtual void BeginPlay() override;
 	UFUNCTION(BlueprintCallable, Category= "Game Event")
 	void NotifyGameClear();
-	void NotifyPlayerGiveUp(APlayerController* GivingUpPlayer);
+	void NotifyPlayerGiveUp(APlayerController* GivingUpPlayer, EGameEndReason Reason);
 	void ForceKickAllPlayers();
 	virtual void Logout(AController* Exiting) override;
 

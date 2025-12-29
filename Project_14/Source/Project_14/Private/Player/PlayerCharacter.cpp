@@ -223,8 +223,6 @@ void APlayerCharacter::MovePushingActor(const FVector2D& MoveInput)
 	FVector DeltaMove = Dir * PushSpeed * PushWeightMultiplier * GetWorld()->GetDeltaSeconds();
 	PushingActor->AddActorWorldOffset(DeltaMove, true);
 	PushingActor->ForceNetUpdate();
-
-	DrawDebugSphere(GetWorld(), PushingActor->GetActorLocation(), 30.f, 8, FColor::Red, false, 0.1f);
 }
 
 void APlayerCharacter::StartPush()

@@ -6,6 +6,7 @@
 #include "HttpServerModule.h"
 #include "IHttpRouter.h"
 #include "HttpRouteHandle.h"
+#include "GameFramework/PlayerState.h"
 
 TArray<APlayerState*> ABaseGameStateBase::GetPlayersForChat(APlayerState* SenderPS)
 {
@@ -99,4 +100,51 @@ void ABaseGameStateBase::SendServerStatusToLobby(FString LobbyURL, int32 MyPort,
 	});
 
 	Request->ProcessRequest();
+}
+
+void ABaseGameStateBase::SendGameResultToLobby(bool bIsCleard, float FloatClearTime, FString StringClearTime, const TArray<APlayerState*>& Players)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	TArray<TSharedPtr<FJsonValue>> PlayerNameArray;
+	for (APlayerState* PS : Players)
+	{
+		if (PS)
+		{
+			PlayerNameArray.Add(MakeShareable(new FJsonValueString(PS->GetPlayerName())));
+		}
+		JsonObject->SetArrayField(TEXT("Player_Name"), PlayerNameArray);
+		JsonObject->SetStringField(TEXT("str_clear_time"), StringClearTime);
+		JsonObject->SetNumberField(TEXT("num_clear_time"), FloatClearTime);
+		JsonObject->SetBoolField(TEXT("is_cleared"), bIsCleard);
+
+		FString RequestBody;
+		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
+		FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
+
+		FHttpRequestRef Request = FHttpModule::Get().CreateRequest();
+		FString LobbyURL = TEXT("http://127.0.0.1:8081");
+
+		Request->SetURL(LobbyURL + TEXT("/api/game_result"));
+		Request->SetVerb(TEXT("POST"));
+		Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+		Request->SetContentAsString(RequestBody);
+
+		Request->OnProcessRequestComplete().BindLambda([](FHttpRequestPtr, FHttpResponsePtr Response, bool bSuccess)
+		{
+			if (bSuccess && Response.IsValid())
+			{
+				UE_LOG(LogTemp, Log, TEXT("[Rank] Sent Result Success: %d"), Response->GetResponseCode());
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("[Rank] Failed to send result."));
+			}
+		});
+		Request->ProcessRequest();
+	}
 }
