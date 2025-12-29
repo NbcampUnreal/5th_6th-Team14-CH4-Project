@@ -2,6 +2,7 @@
 
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SphereComponent.h"
 #include "GameFramework/Character.h"
 #include "Engine/World.h"
 #include "UObject/ConstructorHelpers.h"
@@ -13,7 +14,7 @@ AWavePath::AWavePath()
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	SetRootComponent(Root);
 
-	// ✅ ConstructorHelpers는 생성자에서만!
+	// ✅ ConstructorHelpers는 생성자에서만
 	if (!BallMesh)
 	{
 		static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMesh(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
@@ -27,16 +28,14 @@ AWavePath::AWavePath()
 void AWavePath::BeginPlay()
 {
 	Super::BeginPlay();
-
-	RebuildBallsIfNeeded();
+	RefreshIfNeeded();
 }
 
 void AWavePath::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// 에디터에서 값 바꾸거나 BallCount 변경했을 때 자동 재구성
-	RebuildBallsIfNeeded();
+	RefreshIfNeeded();
 	UpdateBalls();
 }
 
@@ -56,43 +55,80 @@ FVector AWavePath::GetMoveDir() const
 	return Dir;
 }
 
-void AWavePath::RebuildBallsIfNeeded()
+float AWavePath::CalcCollisionRadius() const
 {
-	const bool bNeedRebuild =
-		(Balls.Num() != BallCount) ||
-		(BaseLocalLocations.Num() != BallCount) ||
-		(BallDirSign.Num() != BallCount) ||
-		(BallAmpScale.Num() != BallCount);
+	// UE 기본 Sphere는 반지름 50(Scale 1.0)로 가정
+	const float BaseRadius = 50.0f;
+	return BaseRadius * FMath::Max(0.01f, BallScale) * FMath::Clamp(CollisionScale, 0.1f, 1.0f);
+}
 
-	if (!bNeedRebuild)
+void AWavePath::RefreshIfNeeded()
+{
+	const bool bLayoutChanged =
+		(CachedBallCount != BallCount) ||
+		(!FMath::IsNearlyEqual(CachedBallSpacing, BallSpacing)) ||
+		(!FMath::IsNearlyEqual(CachedBallScale, BallScale)) ||
+		(!FMath::IsNearlyEqual(CachedCollisionScale, CollisionScale)) ||
+		(CachedBallMesh != BallMesh) ||
+		(CachedGapEveryN != GapEveryN) ||
+		(!FMath::IsNearlyEqual(CachedExtraGapSize, ExtraGapSize)) ||
+		(CachedSkipEnabled != bSkipEveryNBall) ||
+		(CachedSkipEveryN != SkipEveryN);
+
+	const bool bMotionParamsChanged =
+		(CachedAltDir != bAlternateDirectionPerBall) ||
+		(!FMath::IsNearlyEqual(CachedJitter, AmplitudeJitter)) ||
+		(CachedSeed != RandomSeed);
+
+	if (bLayoutChanged)
 	{
-		// 메쉬가 바뀐 경우도 반영(옵션)
-		for (UStaticMeshComponent* Ball : Balls)
-		{
-			if (Ball && BallMesh && Ball->GetStaticMesh() != BallMesh)
-			{
-				Ball->SetStaticMesh(BallMesh);
-			}
-		}
+		DestroyBalls();
+		BuildBalls();
+		InitPerBallMotionParams();
+
+		CachedBallCount = BallCount;
+		CachedBallSpacing = BallSpacing;
+		CachedBallScale = BallScale;
+		CachedCollisionScale = CollisionScale;
+		CachedBallMesh = BallMesh;
+
+		CachedGapEveryN = GapEveryN;
+		CachedExtraGapSize = ExtraGapSize;
+		CachedSkipEnabled = bSkipEveryNBall;
+		CachedSkipEveryN = SkipEveryN;
+
+		CachedAltDir = bAlternateDirectionPerBall;
+		CachedJitter = AmplitudeJitter;
+		CachedSeed = RandomSeed;
+
 		return;
 	}
 
-	DestroyBalls();
-	BuildBalls();
-	InitPerBallMotionParams();
+	if (bMotionParamsChanged)
+	{
+		InitPerBallMotionParams();
+		CachedAltDir = bAlternateDirectionPerBall;
+		CachedJitter = AmplitudeJitter;
+		CachedSeed = RandomSeed;
+	}
 }
 
 void AWavePath::DestroyBalls()
 {
-	for (UStaticMeshComponent* Ball : Balls)
+	for (UStaticMeshComponent* Visual : VisualMeshes)
 	{
-		if (!Ball) continue;
-
-		Ball->OnComponentBeginOverlap.Clear();
-		Ball->DestroyComponent();
+		if (!Visual) continue;
+		Visual->DestroyComponent();
+	}
+	for (USphereComponent* Sphere : HitSpheres)
+	{
+		if (!Sphere) continue;
+		Sphere->OnComponentBeginOverlap.Clear();
+		Sphere->DestroyComponent();
 	}
 
-	Balls.Empty();
+	HitSpheres.Empty();
+	VisualMeshes.Empty();
 	BaseLocalLocations.Empty();
 	BallDirSign.Empty();
 	BallAmpScale.Empty();
@@ -100,57 +136,102 @@ void AWavePath::DestroyBalls()
 
 void AWavePath::BuildBalls()
 {
-	if (!BallMesh)
-	{
-		// 메쉬가 없으면 그냥 아무것도 만들지 않음(크래시 방지)
-		return;
-	}
+	// 메쉬 없으면 생성 안 함(크래시 방지)
+	if (!BallMesh) return;
 
-	Balls.Reserve(BallCount);
-	BaseLocalLocations.Reserve(BallCount);
+	HitSpheres.SetNum(BallCount);
+	VisualMeshes.SetNum(BallCount);
+	BaseLocalLocations.SetNum(BallCount);
+
+	const float Radius = CalcCollisionRadius();
+
+	float CurrentY = 0.0f;
 
 	for (int32 i = 0; i < BallCount; ++i)
 	{
-		const FName CompName = *FString::Printf(TEXT("Ball_%02d"), i);
+		// 간격 누적
+		if (i > 0)
+		{
+			CurrentY += BallSpacing;
 
-		UStaticMeshComponent* Ball = NewObject<UStaticMeshComponent>(this, CompName);
-		if (!Ball) continue;
+			// N개마다 큰 간격
+			if (GapEveryN > 0 && (i % GapEveryN) == 0)
+			{
+				CurrentY += ExtraGapSize;
+			}
+		}
 
-		AddInstanceComponent(Ball);
-		Ball->SetupAttachment(Root);
+		const FVector BaseLocal(0.0f, CurrentY, 0.0f);
+		BaseLocalLocations[i] = BaseLocal;
 
-		Ball->SetStaticMesh(BallMesh);
-		Ball->SetRelativeScale3D(FVector(BallScale));
+		// 빈 칸
+		if (bSkipEveryNBall && SkipEveryN > 1 && ((i + 1) % SkipEveryN == 0))
+		{
+			HitSpheres[i] = nullptr;
+			VisualMeshes[i] = nullptr;
+			continue;
+		}
 
-		// 기본 위치: 옆으로 일렬(로컬 Y)
-		const FVector BaseLocal(0.0f, i * BallSpacing, 0.0f);
-		Ball->SetRelativeLocation(BaseLocal);
+		// ====== 판정용 SphereComponent ======
+		const FName SphereName = *FString::Printf(TEXT("HitSphere_%02d"), i);
+		USphereComponent* HitSphere = NewObject<USphereComponent>(this, SphereName);
+		if (!HitSphere)
+		{
+			HitSpheres[i] = nullptr;
+			VisualMeshes[i] = nullptr;
+			continue;
+		}
 
-		// 물리 OFF (연출/판정은 스크립트)
-		Ball->SetSimulatePhysics(false);
-		Ball->SetEnableGravity(false);
+		AddInstanceComponent(HitSphere);
+		HitSphere->SetupAttachment(Root);
+		HitSphere->SetRelativeLocation(BaseLocal);
 
-		// Pawn만 Overlap (맞으면 밀리기)
-		Ball->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		Ball->SetCollisionObjectType(ECC_WorldDynamic);
-		Ball->SetCollisionResponseToAllChannels(ECR_Ignore);
-		Ball->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-		Ball->SetGenerateOverlapEvents(true);
+		// ✅ 충돌 반경(판정만 축소)
+		HitSphere->InitSphereRadius(Radius);
+		HitSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		HitSphere->SetCollisionObjectType(ECC_WorldDynamic);
+		HitSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
+		HitSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+		HitSphere->SetGenerateOverlapEvents(true);
 
-		Ball->OnComponentBeginOverlap.AddDynamic(this, &AWavePath::OnBallBeginOverlap);
+		HitSphere->OnComponentBeginOverlap.AddDynamic(this, &AWavePath::OnBallBeginOverlap);
 
-		// 월드 등록
+		// ====== 비주얼용 StaticMeshComponent (충돌 OFF) ======
+		const FName VisualName = *FString::Printf(TEXT("Visual_%02d"), i);
+		UStaticMeshComponent* Visual = NewObject<UStaticMeshComponent>(this, VisualName);
+		if (!Visual)
+		{
+			HitSphere->OnComponentBeginOverlap.Clear();
+			HitSphere->DestroyComponent();
+
+			HitSpheres[i] = nullptr;
+			VisualMeshes[i] = nullptr;
+			continue;
+		}
+
+		AddInstanceComponent(Visual);
+		Visual->SetupAttachment(HitSphere); // 판정 구에 붙여서 같이 움직이게
+		Visual->SetStaticMesh(BallMesh);
+		Visual->SetRelativeLocation(FVector::ZeroVector);
+		Visual->SetRelativeScale3D(FVector(BallScale));
+
+		// ✅ 비주얼은 충돌 끔(판정은 HitSphere만 담당)
+		Visual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		// 등록
 		if (UWorld* W = GetWorld())
 		{
-			Ball->RegisterComponentWithWorld(W);
+			HitSphere->RegisterComponentWithWorld(W);
+			Visual->RegisterComponentWithWorld(W);
 		}
 		else
 		{
-			Ball->RegisterComponent();
+			HitSphere->RegisterComponent();
+			Visual->RegisterComponent();
 		}
 
-		Balls.Add(Ball);
-		BaseLocalLocations.Add(BaseLocal);
+		HitSpheres[i] = HitSphere;
+		VisualMeshes[i] = Visual;
 	}
 }
 
@@ -160,50 +241,42 @@ void AWavePath::InitPerBallMotionParams()
 	BallAmpScale.SetNum(BallCount);
 
 	FRandomStream Rng(RandomSeed);
-
 	const float J = FMath::Clamp(AmplitudeJitter, 0.0f, 1.0f);
 
 	for (int32 i = 0; i < BallCount; ++i)
 	{
-		// 방향: 번갈아 좌/우 (원하면 false로 두고 모두 같은 방향도 가능)
-		const float Sign = (bAlternateDirectionPerBall ? ((i % 2 == 0) ? 1.0f : -1.0f) : 1.0f);
-		BallDirSign[i] = Sign;
-
-		// 진폭: ±J만큼 랜덤(패턴은 시드로 고정)
-		const float Rand01 = Rng.FRandRange(-J, J); // -J..+J
-		BallAmpScale[i] = 1.0f + Rand01;          // 0.75~1.25 같은 느낌
+		BallDirSign[i] = bAlternateDirectionPerBall ? ((i % 2 == 0) ? 1.0f : -1.0f) : 1.0f;
+		const float Rand01 = Rng.FRandRange(-J, J);
+		BallAmpScale[i] = 1.0f + Rand01;
 	}
 }
 
 void AWavePath::UpdateBalls()
 {
-	if (Balls.Num() == 0) return;
+	if (HitSpheres.Num() == 0) return;
 	if (Period <= 0.0f) return;
 
 	const float Now = GetNow();
 	const float Omega = 2.0f * PI / Period;
 	const FVector Dir = GetMoveDir();
+	const float Easy = FMath::Clamp(GlobalEasyScale, 0.0f, 1.0f);
 
-	for (int32 i = 0; i < Balls.Num(); ++i)
+	for (int32 i = 0; i < HitSpheres.Num(); ++i)
 	{
-		UStaticMeshComponent* Ball = Balls[i];
-		if (!Ball) continue;
+		USphereComponent* HitSphere = HitSpheres[i];
+		if (!HitSphere) continue;
 
-		// “따라락”을 줄이면서도 흐름은 남기기 위해 약한 위상차만 적용
 		const float Phase = Omega * (Now - i * PhaseDelay);
-		const float LocalSwing = FMath::Sin(Phase); // -1..+1 (앞/뒤 왕복)
+		const float LocalSwing = FMath::Sin(Phase); // -1..+1
 
 		const float Sign = BallDirSign.IsValidIndex(i) ? BallDirSign[i] : 1.0f;
 		const float AmpScale = BallAmpScale.IsValidIndex(i) ? BallAmpScale[i] : 1.0f;
 
-		// ✅ 전체 난이도 완화 + 구슬별 랜덤 진폭
-		const float Amp = PushAmplitude * FMath::Clamp(GlobalEasyScale, 0.0f, 1.0f) * AmpScale;
-
-		// ✅ 어떤 구슬은 +, 어떤 구슬은 - 로 움직이며, 범위는 Amp만큼
+		const float Amp = PushAmplitude * Easy * AmpScale;
 		const float Offset = Sign * Amp * LocalSwing;
 
 		const FVector NewLocal = BaseLocalLocations[i] + (Dir * Offset);
-		Ball->SetRelativeLocation(NewLocal, false, nullptr, ETeleportType::TeleportPhysics);
+		HitSphere->SetRelativeLocation(NewLocal, false, nullptr, ETeleportType::TeleportPhysics);
 	}
 }
 
@@ -250,7 +323,6 @@ void AWavePath::ApplyKnockbackToCharacter(AActor* OtherActor) const
 	ACharacter* Ch = Cast<ACharacter>(OtherActor);
 	if (!Ch) return;
 
-	// 구슬이 움직이는 축(Dir) 방향으로 튕김
 	const FVector Dir = GetMoveDir();
 	const FVector LaunchVel = (Dir * KnockbackStrength) + FVector(0, 0, UpwardBoost);
 
