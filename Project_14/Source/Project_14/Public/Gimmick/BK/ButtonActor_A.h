@@ -45,10 +45,10 @@ protected:
 	void ServerHandleRelease();
 
 protected:
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Button")
 	UStaticMeshComponent* ButtonMesh;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Button")
 	UBoxComponent* TriggerBox;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gate")
