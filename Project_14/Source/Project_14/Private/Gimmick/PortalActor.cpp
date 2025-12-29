@@ -2,9 +2,11 @@
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/PlayerState.h"        
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "GameManager/ProjectGameStateBase.h"
 
 APortalActor::APortalActor()
 {
@@ -21,7 +23,7 @@ APortalActor::APortalActor()
 	PortalFX->SetupAttachment(Root);
 
 	PortalFX->SetAutoActivate(true);
-	PortalFX->SetIsReplicated(false); 
+	PortalFX->SetIsReplicated(false);
 
 	TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
 	TriggerBox->SetupAttachment(Root);
@@ -68,15 +70,24 @@ void APortalActor::ServerTeleport_Implementation(ACharacter* Character)
 	if (LastTime && CurrentTime - *LastTime < TeleportCooldown)
 		return;
 
+	// 내 포탈 쿨타임 기록
 	LastTeleportTime.Add(Character, CurrentTime);
 
-	TeleportCharacter(Character);
+	// 도착지(LinkedPortal)에도 쿨타임 기록해서 "도착하자마자" 방지
+	LinkedPortal->LastTeleportTime.Add(Character, CurrentTime);
+
+	// 텔포 성공 여부 받아서 성공했을 때만 통과 처리
+	const bool bTeleported = TeleportCharacter(Character);
+	if (bTeleported)
+	{
+		RegisterPortalPass(Character);
+	}
 }
 
-void APortalActor::TeleportCharacter(ACharacter* Character)
+bool APortalActor::TeleportCharacter(ACharacter* Character) // 반환형 bool
 {
 	if (!Character || !LinkedPortal)
-		return;
+		return false;
 
 	FVector TargetLocation =
 		LinkedPortal->GetActorLocation() +
@@ -84,11 +95,70 @@ void APortalActor::TeleportCharacter(ACharacter* Character)
 
 	FRotator TargetRotation = LinkedPortal->GetActorRotation();
 
-	Character->TeleportTo(TargetLocation, TargetRotation, false, true);
+	const bool bSuccess = Character->TeleportTo(TargetLocation, TargetRotation, false, true);
 
 	UE_LOG(LogTemp, Warning,
-		TEXT("%s Teleported to %s"),
-		*Character->GetName(),
-		*LinkedPortal->GetName());
+		TEXT("%s Teleported to %s (Success=%d)"),
+		*GetNameSafe(Character),
+		*GetNameSafe(LinkedPortal),
+		bSuccess ? 1 : 0);
+
+	return bSuccess;
 }
 
+// 두 명 모두 통과했을 때만 1회 클리어 카운트 증가
+void APortalActor::RegisterPortalPass(ACharacter* Character)
+{
+	if (!HasAuthority())
+		return;
+
+	// 출구 포탈은 false로 해서 중복 증가 방지 권장
+	if (!bCountsForClear)
+		return;
+
+	// 이미 클리어 처리했고 반복 허용 안 하면 더 이상 증가 X
+	if (bClearedThisPortal && !bAllowRepeatClear)
+		return;
+
+	APlayerState* PS = Character ? Character->GetPlayerState() : nullptr;
+	if (!PS)
+		return;
+
+	const int32 Before = PassedPlayers.Num();
+	const bool bAlready = PassedPlayers.Contains(PS);
+
+	if (!bAlready)
+	{
+		PassedPlayers.Add(PS);
+	}
+
+	const int32 After = PassedPlayers.Num();
+
+	UE_LOG(LogTemp, Warning,
+		TEXT("[Portal] Pass %s: %s (Before=%d After=%d /%d)"),
+		bAlready ? TEXT("Repeat") : TEXT("Added"),
+		*GetNameSafe(Character),
+		Before, After, RequiredPlayersToClear);
+
+	// 두 명 모이면 딱 1번만 클리어 카운트 증가
+	if (!bClearedThisPortal && After >= RequiredPlayersToClear)
+	{
+		if (AProjectGameStateBase* GS = GetWorld()->GetGameState<AProjectGameStateBase>())
+		{
+			GS->OnMapCleared();
+
+			UE_LOG(LogTemp, Warning,
+				TEXT(" CLEARED! ClearCount=%d"),
+				GS->ClearedMapCount);
+		}
+
+		bClearedThisPortal = true;
+
+		// 반복 허용이면 다음 사이클을 위해 초기화
+		if (bAllowRepeatClear)
+		{
+			bClearedThisPortal = false;
+			PassedPlayers.Reset();
+		}
+	}
+}
