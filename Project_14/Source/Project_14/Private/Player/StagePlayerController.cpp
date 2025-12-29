@@ -8,7 +8,7 @@ void AStagePlayerController::ServerRPC_GiveUp_Implementation()
 {
 	if (AStageGameModeBase* SGM = GetWorld()->GetAuthGameMode<AStageGameModeBase>())
 	{
-		SGM->NotifyPlayerGiveUp(this);
+		SGM->NotifyPlayerGiveUp(this,EGameEndReason::GivenUp);
 	}
 }
 

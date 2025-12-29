@@ -62,7 +62,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UInGameHUDWidget> InGameHUDClass;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadWrite)
 	UInGameHUDWidget* InGameHUD;
 
 	UFUNCTION(BlueprintCallable)

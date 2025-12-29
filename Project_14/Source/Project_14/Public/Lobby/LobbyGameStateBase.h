@@ -52,6 +52,7 @@ public:
 
 	virtual void OnServerStatusReported(int32 ServerPort, bool bIsIdle) override;
 protected:
+	//virtual void StartHttpLitener(int32 Port) override;
 
 	virtual void BeginPlay() override;
 	UFUNCTION()

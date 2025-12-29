@@ -23,6 +23,8 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* Text_ClearTime;
 
+	virtual void NativeConstruct() override;
+
 	virtual void NativeTick(const FGeometry& MyGeometry,float InDeltaTime) override;
 
 	FText ConvertSecondsToText(float Time) const;

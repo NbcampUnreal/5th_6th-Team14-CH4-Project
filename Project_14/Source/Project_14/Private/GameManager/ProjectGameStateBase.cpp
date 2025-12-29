@@ -53,7 +53,7 @@ void AProjectGameStateBase::OnMapCleared()
         ClearedMapCount++;
     }
 
-    /*ÀüºÎ Å¬¸®¾î ÇÒ¶§ ÀÌ·ÎÁ÷ÀÌ ÇÊ¿äÇÔ
+    /*ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½Ò¶ï¿½ ï¿½Ì·ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½ï¿½ï¿½
     if (ClearPlayTime < 0.f)
     {
         ClearPlayTime = GetPlayTime();

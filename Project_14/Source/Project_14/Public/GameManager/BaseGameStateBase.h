@@ -42,6 +42,7 @@ protected:
 
 public:
 	void SendServerStatusToLobby(FString LobbyURL, int32 MyPort, bool bIsIdle);
+	void SendGameResultToLobby(bool bIsCleard,float FloatClearTime, FString StringClearTime, const TArray<APlayerState*>& Players);
 #pragma endregion
 	
 };
