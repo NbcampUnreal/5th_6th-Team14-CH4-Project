@@ -31,17 +31,17 @@ public:
 
 protected:
 	//로비서버용 virtual func
-	virtual void OnGameServerFinished(int32 ServerPort);
+	virtual void OnServerStatusReported(int32 ServerPort, bool bIsIdle);
 
 	private:
 	//내부 콜백 함수
-	bool HandleGameEndRequest(const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete);
+	bool HandleServerStatusRequest(const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete);
 #pragma endregion
 
 #pragma region game server
 
 public:
-	void SendGameEndToLobby(FString LobbyURL, int32 MyPort);
+	void SendServerStatusToLobby(FString LobbyURL, int32 MyPort, bool bIsIdle);
 #pragma endregion
 	
 };

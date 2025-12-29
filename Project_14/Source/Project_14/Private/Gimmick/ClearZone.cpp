@@ -1,6 +1,7 @@
 #include "Gimmick/ClearZone.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/Character.h"
+#include "GameManager/StageGameModeBase.h"
 #include "Net/UnrealNetwork.h"
 
 AClearZone::AClearZone()
@@ -80,6 +81,8 @@ void AClearZone::OnGameClear()
 
 	UE_LOG(LogTemp, Warning, TEXT("GAME CLEAR!"));
 
+	AStageGameModeBase* SGM = GetWorld()->GetAuthGameMode<AStageGameModeBase>();
+	SGM->NotifyGameClear();
 	//  여기서 GameMode, UI 호출
 }
 

@@ -31,23 +31,23 @@ void ABaseGameStateBase::StartHttpListener(int32 Port)
 	FHttpRequestHandler RequestHandler = FHttpRequestHandler::CreateLambda(
 		[this](const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete) -> bool
 		{
-			return this->HandleGameEndRequest(Request, OnComplete);
+			return this->HandleServerStatusRequest(Request, OnComplete);
 		}
 	);
 
 	// /api/game_end 경로 바인딩
-	HttpRouter->BindRoute(FHttpPath(TEXT("/api/game_end")), EHttpServerRequestVerbs::VERB_POST, RequestHandler);
+	HttpRouter->BindRoute(FHttpPath(TEXT("/api/server_status")), EHttpServerRequestVerbs::VERB_POST, RequestHandler);
 	HttpServerModule.StartAllListeners();
 	
 	UE_LOG(LogTemp, Warning, TEXT("[HTTP] Listener Started on Port %d"), Port);
 }
 
-void ABaseGameStateBase::OnGameServerFinished(int32 ServerPort)
+void ABaseGameStateBase::OnServerStatusReported(int32 ServerPort, bool bIsIdle)
 {
 	UE_LOG(LogTemp, Warning, TEXT("[Base] Received GameEnd Signal from Port: %d (No Logic Implemented)"), ServerPort);
 }
 
-bool ABaseGameStateBase::HandleGameEndRequest(const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete)
+bool ABaseGameStateBase::HandleServerStatusRequest(const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete)
 {
 	FString BodyStr;
 	const TArray<uint8>& BodyData = Request.Body;
@@ -58,12 +58,16 @@ bool ABaseGameStateBase::HandleGameEndRequest(const FHttpServerRequest& Request,
 
 	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
 	{
-		int32 FinishedPort = JsonObject->GetIntegerField(TEXT("Port"));
+		int32 Port = JsonObject->GetIntegerField(TEXT("Port"));
 
-		
-		AsyncTask(ENamedThreads::GameThread, [this, FinishedPort]()
+		bool bIsIdle = true;
+		if (JsonObject->HasField(TEXT("IsIdle")))
 		{
-			OnGameServerFinished(FinishedPort);
+			bIsIdle = JsonObject->GetBoolField(TEXT("IsIdle"));
+		}
+		AsyncTask(ENamedThreads::GameThread, [this, Port, bIsIdle]()
+		{
+			OnServerStatusReported(Port,bIsIdle);
 		});
 
 		TUniquePtr<FHttpServerResponse> Response = FHttpServerResponse::Create(TEXT("Success"), TEXT("text/plain"));
@@ -73,17 +77,18 @@ bool ABaseGameStateBase::HandleGameEndRequest(const FHttpServerRequest& Request,
 	return false;
 }
 
-void ABaseGameStateBase::SendGameEndToLobby(FString LobbyURL, int32 MyPort)
+void ABaseGameStateBase::SendServerStatusToLobby(FString LobbyURL, int32 MyPort,bool bIsIdle)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 	JsonObject->SetNumberField(TEXT("Port"), MyPort);
+	JsonObject->SetBoolField(TEXT("IsIdle"),bIsIdle);
 
 	FString RequestBody;
 	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
 	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
 
 	FHttpRequestRef Request = FHttpModule::Get().CreateRequest();
-	Request->SetURL(LobbyURL + TEXT("/api/game_end"));
+	Request->SetURL(LobbyURL + TEXT("/api/server_status"));
 	Request->SetVerb(TEXT("POST"));
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetContentAsString(RequestBody);
