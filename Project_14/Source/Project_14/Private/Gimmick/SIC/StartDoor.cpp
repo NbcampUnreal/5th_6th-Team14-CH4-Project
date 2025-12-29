@@ -3,6 +3,7 @@
 
 #include "Gimmick/SIC/StartDoor.h"
 #include "Net/UnrealNetwork.h"
+#include "GameManager/ProjectGameStateBase.h"
 
 // Sets default values
 AStartDoor::AStartDoor()
@@ -74,6 +75,11 @@ void AStartDoor::Tick(float DeltaTime)
 	{
 		FVector Current = SceneRoot->GetRelativeLocation();
 		FVector NewLocation = FMath::VInterpConstantTo(Current, TargetLocation, DeltaTime, MoveSpeed);
+		if (AProjectGameStateBase* GS = GetWorld()->GetGameState<AProjectGameStateBase>())
+		{
+			GS->OnMapCleared();
+			UE_LOG(LogTemp, Warning, TEXT("Clear Tutorial"));
+		}
 
 		SceneRoot->SetRelativeLocation(NewLocation);
 		if (FVector::Dist(Current, TargetLocation) <= 1.0f)
