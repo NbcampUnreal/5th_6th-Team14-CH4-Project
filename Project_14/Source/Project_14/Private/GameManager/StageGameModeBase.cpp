@@ -4,6 +4,7 @@
 #include "GameManager/StageGameModeBase.h"
 #include "Player/StagePlayerController.h"
 #include "GameManager/BaseGameStateBase.h"
+#include "GameManager/ProjectGameStateBase.h"
 #include "GameManager/StageGameStateBase.h"
 
 void AStageGameModeBase::BeginPlay()
@@ -34,6 +35,10 @@ void AStageGameModeBase::NotifyGameClear()
 			PC->ClientRPC_ShowGameEndUI(EGameEndReason::Cleared);
 		}
 	}
+	if (AProjectGameStateBase* PGS = GetGameState<AProjectGameStateBase>())
+	{
+		//PGS->SendGameResultToLobby(bool bIsCleard, float FloatClearTime, FString StringClearTime, const TArray<APlayerState*>& Players);
+	}	
 	GetWorldTimerManager().SetTimer(EndGameTimerHandle, this, &AStageGameModeBase::ForceKickAllPlayers, KickAllPlayersTime, false);
 }
 

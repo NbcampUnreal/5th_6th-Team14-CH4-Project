@@ -3,6 +3,11 @@
 #include "GameManager/ProjectGameStateBase.h"
 #include "Kismet/GameplayStatics.h"
 
+void UInGameHUDWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+}
+
 void UInGameHUDWidget::NativeTick(const FGeometry& MyGeometry,float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
