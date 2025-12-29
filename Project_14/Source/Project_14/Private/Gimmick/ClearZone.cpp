@@ -2,7 +2,9 @@
 #include "Components/BoxComponent.h"
 #include "GameFramework/Character.h"
 #include "GameManager/StageGameModeBase.h"
+#include "GameManager/ProjectGameStateBase.h"
 #include "Net/UnrealNetwork.h"
+#include "UI/MH/InGameHUDWidget.h"
 
 AClearZone::AClearZone()
 {
@@ -71,6 +73,18 @@ void AClearZone::CheckClearCondition()
 
 	if (OverlappingCharacters.Num() >= RequiredPlayerCount)
 	{
+		AProjectGameStateBase* GS = GetWorld()->GetGameState<AProjectGameStateBase>();
+
+		if (GS->ClearPlayTime < 0.f)
+		{
+			GS->ClearPlayTime = GS->GetPlayTime();
+			int32 TotalSeconds = FMath::FloorToInt(GS->ClearPlayTime);
+			int32 Minutes = TotalSeconds / 60;
+			int32 Seconds = TotalSeconds % 60;
+
+			GS->ClearTimeString =
+				FString::Printf(TEXT("Play Time : %02d:%02d"), Minutes, Seconds);
+		}
 		OnGameClear();
 	}
 }

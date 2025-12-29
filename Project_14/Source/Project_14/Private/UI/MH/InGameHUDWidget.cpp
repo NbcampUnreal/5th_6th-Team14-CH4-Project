@@ -1,6 +1,7 @@
 #include "UI/MH/InGameHUDWidget.h"
 #include "Components/TextBlock.h"
 #include "GameManager/ProjectGameStateBase.h"
+#include "Gimmick/ClearZone.h"
 #include "Kismet/GameplayStatics.h"
 
 void UInGameHUDWidget::NativeConstruct()
@@ -43,10 +44,14 @@ FText UInGameHUDWidget::ConvertSecondsToText(float Time) const
 
 	if (Hours > 0)
 	{
-		return FText::FromString(FString::Printf(TEXT("%02d:%02d:%02d"), Hours, Minutes, Seconds));
+		return FText::FromString(FString::Printf(TEXT("Play Time : %02d:%02d:%02d"), Hours, Minutes, Seconds));
 	}
 	else
 	{
-		return FText::FromString(FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds));
+		return FText::FromString(FString::Printf(TEXT("Play Time : %02d:%02d"), Minutes, Seconds));
 	}
+}
+void UInGameHUDWidget::UpdateEndReason(EGameEndReason Reason)
+{
+	OnUpdateUI(Reason);
 }

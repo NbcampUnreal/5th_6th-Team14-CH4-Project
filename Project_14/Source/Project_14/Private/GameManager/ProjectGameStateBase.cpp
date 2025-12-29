@@ -24,10 +24,10 @@ void AProjectGameStateBase::StartGame()
 }
 float AProjectGameStateBase::GetPlayTime() const
 {
-    if (GameStartTime < 0.f)
+   if (GameStartTime < 0.f)
         return 0.f;
 
-    return GetWorld()->GetTimeSeconds() - GameStartTime;
+    return GetWorld()->GetTimeSeconds() - GameStartTime; 
 }
 
 TArray<APlayerState*> AProjectGameStateBase::GetPlayersForChat(APlayerState* SenderPS)
@@ -52,12 +52,6 @@ void AProjectGameStateBase::OnMapCleared()
     {
         ClearedMapCount++;
     }
-
-    /*���� Ŭ���� �Ҷ� �̷����� �ʿ���
-    if (ClearPlayTime < 0.f)
-    {
-        ClearPlayTime = GetPlayTime();
-    }*/
 }
 
 FText AProjectGameStateBase::GetCurrentGuideText() const
@@ -88,4 +82,5 @@ void AProjectGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
     DOREPLIFETIME(AProjectGameStateBase, SelectedCharacterTypes);
     DOREPLIFETIME(AProjectGameStateBase, GameStartTime);
     DOREPLIFETIME(AProjectGameStateBase, ClearPlayTime);
+    DOREPLIFETIME(AProjectGameStateBase, ClearedMapCount);
 }
