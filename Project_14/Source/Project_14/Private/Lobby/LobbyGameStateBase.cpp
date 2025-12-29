@@ -139,8 +139,14 @@ int32 ALobbyGameStateBase::CreateRoom(ALobbyPlayerState* Host, FString RoomName)
 	NewRoom.RoomName = RoomName;
 	NewRoom.HostPlayerID = Host->GetPlayerId();
 	NewRoom.AssingedServerIndex = ServerIndex;
+	if (GameServerList.IsValidIndex(ServerIndex))
+	{
+		NewRoom.GameServerIP = GameServerList[ServerIndex].IPAddress;
+		NewRoom.GameServerPort = GameServerList[ServerIndex].Port;
+	}
 	NewRoom.MemberPlayerStates.AddUnique(Host);
 	NewRoom.HostName = Host->GetPlayerName();
+	NewRoom.MaxPlayers = 2;
 	NewRoom.RoomID = RoomIDCounter++;
 
 	RoomList.Add(NewRoom);
@@ -152,6 +158,7 @@ int32 ALobbyGameStateBase::CreateRoom(ALobbyPlayerState* Host, FString RoomName)
 	{
 		OnRoomListUpdated.Broadcast();
 	}
+	UE_LOG(LogTemp, Log, TEXT("[Lobby] Room Created: ID %d, Server Port: %d"), NewRoom.RoomID, NewRoom.GameServerPort);
 	return NewRoom.RoomID;
 }
 
@@ -239,11 +246,13 @@ int32 ALobbyGameStateBase::FindAvailableServerIndex()
 {
 	for (int32 i =0; i <GameServerList.Num(); ++i)
 	{
+		UE_LOG(LogTemp, Log, TEXT("[FindServer] Index: %d, Port: %d, bIsBusy: %d"), i, GameServerList[i].Port, GameServerList[i].bIsBusy);
 		if (!GameServerList[i].bIsBusy)
 		{
 			return i;
 		}
 	}
+	UE_LOG(LogTemp, Error, TEXT("[FindServer] No available servers found!"));
 	return -1;
 }
 
@@ -273,19 +282,27 @@ void ALobbyGameStateBase::OnRep_RoomList()
 	}
 }
 
-void ALobbyGameStateBase::OnGameServerFinished(int32 ServerPort)
+void ALobbyGameStateBase::OnServerStatusReported(int32 ServerPort, bool bIsIdle)
 {
-	
-	UE_LOG(LogTemp, Warning, TEXT("[Lobby] Server Finished: %d. Release Busy Status."), ServerPort);
-
+	UE_LOG(LogTemp, Warning, TEXT("[Lobby] Received Report - Port: %d, IsIdle: %d"), ServerPort, bIsIdle);
+	//로그확인용 변수
+	bool bFound = false;
 	for (int32 i = 0; i < GameServerList.Num(); ++i)
 	{
 		if (GameServerList[i].Port == ServerPort)
 		{
-			SetServerBusyStatus(i, false); 
-			
-			if (OnRoomListUpdated.IsBound()) OnRoomListUpdated.Broadcast();
+			GameServerList[i].bIsBusy = !bIsIdle;
+			UE_LOG(LogTemp, Warning, TEXT("[Lobby] Server [%d] Status Updated -> Busy: %d"), ServerPort, GameServerList[i].bIsBusy);
+			bFound = true;
+			if (OnRoomListUpdated.IsBound())
+			{
+				OnRoomListUpdated.Broadcast();
+			}
 			break;
 		}
+	}
+	if (!bFound)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Lobby] Failed to find server with port: %d"), ServerPort);
 	}
 }

@@ -1,15 +1,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
 #include "Player/PlayerCharacter.h"
+#include "GameManager/StageGameModeBase.h"
 #include "ProjectGameModeBase.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECT_14_API AProjectGameModeBase : public AGameModeBase
+class PROJECT_14_API AProjectGameModeBase : public AStageGameModeBase
 {
 	GENERATED_BODY()
 

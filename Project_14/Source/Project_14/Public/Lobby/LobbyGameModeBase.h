@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "GameManager/BaseGameModeBase.h"
 #include "LobbyGameModeBase.generated.h"
 
 struct FRoomInfo;
@@ -11,7 +12,7 @@ struct FRoomInfo;
  * 
  */
 UCLASS()
-class PROJECT_14_API ALobbyGameModeBase : public AGameModeBase
+class PROJECT_14_API ALobbyGameModeBase : public ABaseGameModeBase
 {
 	GENERATED_BODY()
 

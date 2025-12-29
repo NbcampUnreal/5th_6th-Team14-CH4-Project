@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
 #include "Player/PlayerCharacter.h"
-#include "GameManager/BaseGameStateBase.h"
+#include "GameManager/StageGameStateBase.h"
 #include "UI/MH/Level_DataAsset.h"
 #include "ProjectGameStateBase.generated.h"
 
@@ -11,7 +11,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterTypeSelected);
 
 
 UCLASS()
-class PROJECT_14_API AProjectGameStateBase : public ABaseGameStateBase
+class PROJECT_14_API AProjectGameStateBase : public AStageGameStateBase
 {
 	GENERATED_BODY()
 	
