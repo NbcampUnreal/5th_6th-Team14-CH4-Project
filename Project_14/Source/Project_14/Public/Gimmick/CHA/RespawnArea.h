@@ -29,7 +29,7 @@ protected:
     bool bProjectToGround = true;
 
     UPROPERTY(EditAnywhere, Category = "Respawn", meta = (EditCondition = "bProjectToGround"))
-    float TraceStartHeight = 2000.f;
+    float TraceStartHeight = 2000.f; // (※ 지금 코드에선 직접 안 씀. 남겨둬도 문제 없음)
 
     UPROPERTY(EditAnywhere, Category = "Respawn", meta = (EditCondition = "bProjectToGround"))
     float TraceDownDistance = 5000.f;
