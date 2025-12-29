@@ -50,7 +50,7 @@ public:
 	void SetServerBusyStatus(int32 ServerID, bool bBusy);
 	void InitializeServerList();
 
-	virtual void OnGameServerFinished(int32 ServerPort) override;
+	virtual void OnServerStatusReported(int32 ServerPort, bool bIsIdle) override;
 protected:
 
 	virtual void BeginPlay() override;

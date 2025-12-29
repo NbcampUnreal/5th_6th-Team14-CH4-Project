@@ -6,7 +6,23 @@
 #include "Lobby/LobbyPlayerState.h"
 #include "ServerTypes.generated.h"     
 
+
+/*
+ * 게임 종료 사유 정의
+ */
+UENUM(BlueprintType)
+enum class EGameEndReason : uint8
+{
+	None,
+	Cleared,        // 클리어 
+	Forfeited,      // 누군가 포기/탈주 
+	GivenUp         // 내가 포기 버튼 누름 
+};
+
+
+
 /**
+ *방 정보 구조체
  * */
 USTRUCT(BlueprintType)
 struct FRoomInfo
@@ -51,6 +67,9 @@ public:
 	bool bIsGameStarting = false;
 };
 
+/*
+ * 게임 서버 정보 구조체
+ */
 USTRUCT(BlueprintType)
 struct FGameServerInfo
 {
