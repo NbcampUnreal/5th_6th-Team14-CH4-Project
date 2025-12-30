@@ -75,10 +75,14 @@ void AStartDoor::Tick(float DeltaTime)
 	{
 		FVector Current = SceneRoot->GetRelativeLocation();
 		FVector NewLocation = FMath::VInterpConstantTo(Current, TargetLocation, DeltaTime, MoveSpeed);
-		if (AProjectGameStateBase* GS = GetWorld()->GetGameState<AProjectGameStateBase>())
+		if(!bIsOpen)
 		{
-			GS->OnMapCleared();
-			UE_LOG(LogTemp, Warning, TEXT("Clear Tutorial"));
+			if (AProjectGameStateBase* GS = GetWorld()->GetGameState<AProjectGameStateBase>())
+			{
+				GS->OnMapCleared();
+				UE_LOG(LogTemp, Warning, TEXT("Clear Tutorial"));
+				bIsOpen = true;
+			}
 		}
 
 		SceneRoot->SetRelativeLocation(NewLocation);
