@@ -11,23 +11,24 @@ AProjectGameStateBase::AProjectGameStateBase()
 void AProjectGameStateBase::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+
+    if (HasAuthority() && bIsInGameStarted)
+    {
+        PlayTime += DeltaSeconds;
+    }
 }
 
 void AProjectGameStateBase::StartGame()
 {
     if (!HasAuthority()) return;
+    if (bIsInGameStarted) return;
 
-    if (GameStartTime < 0.f)
-    {
-        GameStartTime = GetWorld()->GetTimeSeconds();
-    }
+    bIsInGameStarted = true;
+    PlayTime = 0.f;
 }
 float AProjectGameStateBase::GetPlayTime() const
 {
-   if (GameStartTime < 0.f)
-        return 0.f;
-
-    return GetWorld()->GetTimeSeconds() - GameStartTime; 
+    return PlayTime;
 }
 
 TArray<APlayerState*> AProjectGameStateBase::GetPlayersForChat(APlayerState* SenderPS)
@@ -80,7 +81,8 @@ void AProjectGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
     DOREPLIFETIME(AProjectGameStateBase, SelectedCharacterTypes);
-    DOREPLIFETIME(AProjectGameStateBase, GameStartTime);
+    DOREPLIFETIME(AProjectGameStateBase, PlayTime);
     DOREPLIFETIME(AProjectGameStateBase, ClearPlayTime);
     DOREPLIFETIME(AProjectGameStateBase, ClearedMapCount);
+    DOREPLIFETIME(AProjectGameStateBase, bIsInGameStarted);
 }
