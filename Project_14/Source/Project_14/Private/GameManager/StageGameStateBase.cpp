@@ -2,16 +2,15 @@
 
 
 #include "GameManager/StageGameStateBase.h"
+#include "Server/ServerConfigSettings.h"
+
 
 void AStageGameStateBase::NotifyLobbyServerGameState(bool bIsIdle)
 {
 	if (HasAuthority())
 	{
 		int32 MyPort = GetWorld()->URL.Port;
-
-		//config fix
-		FString LobbyURL = TEXT("http://127.0.0.1:8081");
-		SendServerStatusToLobby(LobbyURL, MyPort,bIsIdle);
+		SendServerStatusToLobby(MyPort,bIsIdle);
 		FString StateStr = bIsIdle ? TEXT("Idle (Ready)") : TEXT("Busy (Playing)");
 		UE_LOG(LogTemp, Warning, TEXT("[StageGS] Reported Status to Lobby: %s"), *StateStr);
 	}

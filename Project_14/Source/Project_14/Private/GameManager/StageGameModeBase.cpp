@@ -37,7 +37,7 @@ void AStageGameModeBase::NotifyGameClear()
 	}
 	if (AProjectGameStateBase* PGS = GetGameState<AProjectGameStateBase>())
 	{
-		//PGS->SendGameResultToLobby(bool bIsCleard, float FloatClearTime, FString StringClearTime, const TArray<APlayerState*>& Players);
+		PGS->SendGameResultToLobby(true, PGS->ClearPlayTime, PGS->ClearTimeString, PGS->PlayerArray);
 	}	
 	GetWorldTimerManager().SetTimer(EndGameTimerHandle, this, &AStageGameModeBase::ForceKickAllPlayers, KickAllPlayersTime, false);
 }
