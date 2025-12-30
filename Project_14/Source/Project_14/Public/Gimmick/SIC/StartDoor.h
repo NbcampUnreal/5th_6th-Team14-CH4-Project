@@ -41,6 +41,8 @@ public:
 
 	UPROPERTY(Replicated)
 	bool bHasJumpActivator = false;
+	UPROPERTY(Replicated)
+	bool bIsOpen = false;
 
 	UFUNCTION(BlueprintCallable)
 	void TogglePush();
