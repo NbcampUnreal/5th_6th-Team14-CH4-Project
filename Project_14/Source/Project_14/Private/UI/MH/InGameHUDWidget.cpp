@@ -13,6 +13,12 @@ void UInGameHUDWidget::NativeTick(const FGeometry& MyGeometry,float InDeltaTime)
 
 	if (!GS || !Text_PlayTime)
 		return;
+	
+	if (!GS->bIsInGameStarted)
+	{
+		Text_PlayTime->SetText(FText::FromString(TEXT("Play Time : 00:00")));
+		return;
+	}
 
 	const float PlayTime = GS->GetPlayTime();
 	Text_PlayTime->SetText(ConvertSecondsToText(PlayTime));

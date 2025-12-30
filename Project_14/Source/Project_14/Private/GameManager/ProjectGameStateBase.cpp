@@ -16,11 +16,10 @@ void AProjectGameStateBase::Tick(float DeltaSeconds)
 void AProjectGameStateBase::StartGame()
 {
     if (!HasAuthority()) return;
+    if (bIsInGameStarted) return;
 
-    if (GameStartTime < 0.f)
-    {
-        GameStartTime = GetWorld()->GetTimeSeconds();
-    }
+    bIsInGameStarted = true;
+    GameStartTime = GetWorld()->GetTimeSeconds();
 }
 float AProjectGameStateBase::GetPlayTime() const
 {
@@ -83,4 +82,5 @@ void AProjectGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
     DOREPLIFETIME(AProjectGameStateBase, GameStartTime);
     DOREPLIFETIME(AProjectGameStateBase, ClearPlayTime);
     DOREPLIFETIME(AProjectGameStateBase, ClearedMapCount);
+    DOREPLIFETIME(AProjectGameStateBase, bIsInGameStarted);
 }
