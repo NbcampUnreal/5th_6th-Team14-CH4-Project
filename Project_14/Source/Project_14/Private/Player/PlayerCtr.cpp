@@ -115,3 +115,12 @@ void APlayerCtr::RemoveInGameHUD()
 		InGameHUD = nullptr;
 	}
 }
+
+bool APlayerCtr::IsPushCharacter() const
+{
+	APlayerCharacter* MyChar = Cast<APlayerCharacter>(GetPawn());
+	if (!MyChar)
+		return false;
+
+	return MyChar->CharacterType == ECharacterType::StrongPush;
+}
