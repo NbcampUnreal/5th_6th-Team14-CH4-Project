@@ -31,6 +31,12 @@ public class Project_14 : ModuleRules
             //JSon
             "Json",
             "JsonUtilities", "HttpServer",
+            
+            //development
+            "DeveloperSettings",
+            
+            //voice
+            "VivoxCore",
         });
 	}
 }

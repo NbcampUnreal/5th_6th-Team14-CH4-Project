@@ -51,9 +51,11 @@ public:
 	void InitializeServerList();
 
 	virtual void OnServerStatusReported(int32 ServerPort, bool bIsIdle) override;
+	virtual void OnLeaderBoardUpdated(FGameResultReport RecievedReport) override;
 protected:
-	//virtual void StartHttpLitener(int32 Port) override;
+	virtual void StartHttpListener(int32 Port) override;
 
+	bool HandleGameResultRequest(const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete);
 	virtual void BeginPlay() override;
 	UFUNCTION()
 	void OnRep_RoomList();

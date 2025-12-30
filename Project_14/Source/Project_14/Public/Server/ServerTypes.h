@@ -19,7 +19,63 @@ enum class EGameEndReason : uint8
 	GivenUp         // 내가 포기 버튼 누름 
 };
 
+/*
+ *http score info report 
+ */
+USTRUCT(BlueprintType)
+struct FGameResultReport
+{
+	GENERATED_BODY()
 
+	UPROPERTY()
+	TArray<FString> player_names;
+
+	UPROPERTY()
+	float num_clear_time = 0.f;
+
+	UPROPERTY()
+	bool is_cleared = false;
+	
+};
+
+
+
+/*
+ * http server status report
+ */
+USTRUCT(BlueprintType)
+struct FServerStatusReport
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int32 Port = 0;
+
+	UPROPERTY()
+	bool IsIdle = true;
+};
+
+
+
+/*
+ * 랭킹 info
+ */
+USTRUCT(BlueprintType)
+struct FRankRecord
+{
+	GENERATED_BODY()
+	UPROPERTY(BlueprintReadOnly, Category="Rank")
+	TArray<FString> PlayerNames;
+	UPROPERTY(BlueprintReadOnly, Category="Rank")
+	float ClearTime = 9999.9f;
+
+	FRankRecord()
+	{
+		PlayerNames.Add(TEXT("None"));
+		ClearTime = 9999.9f;
+	}
+	FRankRecord(const TArray<FString>& InNames, const float InTime):PlayerNames(InNames),ClearTime(InTime){}
+};
 
 /**
  *방 정보 구조체

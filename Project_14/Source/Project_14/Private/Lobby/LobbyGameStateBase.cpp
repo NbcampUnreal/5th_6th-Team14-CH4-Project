@@ -1,8 +1,11 @@
 #include "Lobby/LobbyGameStateBase.h"
 
+#include "JsonObjectConverter.h"
+#include "Server/ServerTypes.h"
 #include "Lobby/LobbyPlayerController.h"
 #include "Lobby/LobbyPlayerState.h"
 #include "Net/UnrealNetwork.h" 
+#include "Server/ServerConfigSettings.h"
 
 
 #define NET_LOG(Format, ...) UE_LOG(LogTemp, Warning, TEXT("[%s] %s"), \
@@ -12,12 +15,17 @@ HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"), \
 void ALobbyGameStateBase::BeginPlay()
 {
 	Super::BeginPlay();
-	InitializeServerList();
 	if (HasAuthority())
 	{
 		InitializeServerList();
-		
-		StartHttpListener(8081); 
+		StartHttpListener(8081);
+		if (LeaderBoard.Num() == 0)
+		{
+			for (int32 i = 0; i <10; ++i)
+			{
+				LeaderBoard.Add(FRankRecord());
+			}
+		}
 	}
 }
 
@@ -268,9 +276,13 @@ void ALobbyGameStateBase::InitializeServerList()
 {
 	if (HasAuthority())
 	{
+		const UServerConfigSettings* Settings = UServerConfigSettings::Get();
 		GameServerList.Empty();
-		GameServerList.Add(FGameServerInfo(TEXT("127.0.0.1"),7778));
-		GameServerList.Add(FGameServerInfo(TEXT("127.0.0.1"),7779));
+		for (int32 Port: Settings->GameServerPorts)
+		{
+			GameServerList.Add(FGameServerInfo(Settings->GameServerPublicIP,Port));
+		}
+		UE_LOG(LogTemp, Log, TEXT("[InitializeServerList]"));
 	}
 }
 
@@ -285,7 +297,7 @@ void ALobbyGameStateBase::OnRep_RoomList()
 void ALobbyGameStateBase::OnServerStatusReported(int32 ServerPort, bool bIsIdle)
 {
 	UE_LOG(LogTemp, Warning, TEXT("[Lobby] Received Report - Port: %d, IsIdle: %d"), ServerPort, bIsIdle);
-	//로그확인용 변수
+	
 	bool bFound = false;
 	for (int32 i = 0; i < GameServerList.Num(); ++i)
 	{
@@ -305,4 +317,74 @@ void ALobbyGameStateBase::OnServerStatusReported(int32 ServerPort, bool bIsIdle)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[Lobby] Failed to find server with port: %d"), ServerPort);
 	}
+}
+
+void ALobbyGameStateBase::OnLeaderBoardUpdated(FGameResultReport RecievedReport)
+{
+	Super::OnLeaderBoardUpdated(RecievedReport);
+	FRankRecord NewRank;
+	NewRank.ClearTime = RecievedReport.num_clear_time;
+	for (FString PlayerName : RecievedReport.player_names)
+	{
+		NewRank.PlayerNames.Add(PlayerName);
+	}
+	NewRank.PlayerNames.Sort();
+	LeaderBoard.Add(NewRank);
+	LeaderBoard.Sort([](const FRankRecord& L, const FRankRecord& R)
+	{
+		return L.ClearTime < R.ClearTime;
+	});
+	if (LeaderBoard.Num() > 10)
+	{
+		LeaderBoard.RemoveAt(10,LeaderBoard.Num() - 10);
+	}
+}
+
+void ALobbyGameStateBase::StartHttpListener(int32 Port)
+{
+	Super::StartHttpListener(Port);
+
+	if (!HasAuthority()) return;
+
+	FHttpServerModule& HttpServerModule = FHttpServerModule::Get();
+	TSharedPtr<IHttpRouter> HttpRouter = HttpServerModule.GetHttpRouter(Port);
+
+	if (!HttpRouter.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Lobby] Failed to get Router for Port %d"), Port);
+		return;
+	}
+
+	FHttpRequestHandler GameResultHandler = FHttpRequestHandler::CreateLambda(
+	   [this](const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete) -> bool
+	   {
+		  return this->HandleGameResultRequest(Request, OnComplete);
+	   }
+	);
+
+	HttpRouter->BindRoute(FHttpPath(TEXT("/api/game_result")), EHttpServerRequestVerbs::VERB_POST, GameResultHandler);
+
+	UE_LOG(LogTemp, Warning, TEXT("[Lobby] Additional Route Bound: /api/game_result"));
+}
+
+bool ALobbyGameStateBase::HandleGameResultRequest(const FHttpServerRequest& Request,
+	const FHttpResultCallback& OnComplete)
+{
+	FString BodyStr;
+	const TArray<uint8>& BodyData = Request.Body;
+	BodyStr.Append((const char*)BodyData.GetData(), BodyData.Num());
+
+	FGameResultReport RecievedReport;
+	if (FJsonObjectConverter::JsonObjectStringToUStruct(BodyStr,&RecievedReport,0,0))
+	{
+		AsyncTask(ENamedThreads::GameThread, [this,RecievedReport]()
+		{
+			OnLeaderBoardUpdated(RecievedReport);
+		});
+		TUniquePtr<FHttpServerResponse> Response = FHttpServerResponse::Create(TEXT("Success"), TEXT("text/plain"));
+		OnComplete(MoveTemp(Response));
+		return true;
+	}
+	
+	return false;
 }
