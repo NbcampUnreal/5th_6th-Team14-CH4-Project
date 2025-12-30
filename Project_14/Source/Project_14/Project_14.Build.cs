@@ -35,8 +35,6 @@ public class Project_14 : ModuleRules
             //development
             "DeveloperSettings",
             
-            //voice
-            "VivoxCore",
         });
 	}
 }
