@@ -51,7 +51,7 @@ public:
 	void InitializeServerList();
 
 	virtual void OnServerStatusReported(int32 ServerPort, bool bIsIdle) override;
-	virtual void OnLeaderBoardUpdated(FRankRecord NewRank) override;
+	virtual void OnLeaderBoardUpdated(FGameResultReport RecievedReport) override;
 protected:
 	virtual void StartHttpListener(int32 Port) override;
 

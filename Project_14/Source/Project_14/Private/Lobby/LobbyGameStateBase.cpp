@@ -1,8 +1,11 @@
 #include "Lobby/LobbyGameStateBase.h"
+
+#include "JsonObjectConverter.h"
 #include "Server/ServerTypes.h"
 #include "Lobby/LobbyPlayerController.h"
 #include "Lobby/LobbyPlayerState.h"
 #include "Net/UnrealNetwork.h" 
+#include "Server/ServerConfigSettings.h"
 
 
 #define NET_LOG(Format, ...) UE_LOG(LogTemp, Warning, TEXT("[%s] %s"), \
@@ -12,12 +15,17 @@ HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"), \
 void ALobbyGameStateBase::BeginPlay()
 {
 	Super::BeginPlay();
-	InitializeServerList();
 	if (HasAuthority())
 	{
 		InitializeServerList();
-		
-		StartHttpListener(8081); 
+		StartHttpListener(8081);
+		if (LeaderBoard.Num() == 0)
+		{
+			for (int32 i = 0; i <10; ++i)
+			{
+				LeaderBoard.Add(FRankRecord());
+			}
+		}
 	}
 }
 
@@ -268,9 +276,13 @@ void ALobbyGameStateBase::InitializeServerList()
 {
 	if (HasAuthority())
 	{
+		const UServerConfigSettings* Settings = UServerConfigSettings::Get();
 		GameServerList.Empty();
-		GameServerList.Add(FGameServerInfo(TEXT("127.0.0.1"),7778));
-		GameServerList.Add(FGameServerInfo(TEXT("127.0.0.1"),7779));
+		for (int32 Port: Settings->GameServerPorts)
+		{
+			GameServerList.Add(FGameServerInfo(Settings->GameServerPublicIP,Port));
+		}
+		UE_LOG(LogTemp, Log, TEXT("[InitializeServerList]"));
 	}
 }
 
@@ -307,9 +319,16 @@ void ALobbyGameStateBase::OnServerStatusReported(int32 ServerPort, bool bIsIdle)
 	}
 }
 
-void ALobbyGameStateBase::OnLeaderBoardUpdated(FRankRecord NewRank)
+void ALobbyGameStateBase::OnLeaderBoardUpdated(FGameResultReport RecievedReport)
 {
-	Super::OnLeaderBoardUpdated(NewRank);
+	Super::OnLeaderBoardUpdated(RecievedReport);
+	FRankRecord NewRank;
+	NewRank.ClearTime = RecievedReport.num_clear_time;
+	for (FString PlayerName : RecievedReport.player_names)
+	{
+		NewRank.PlayerNames.Add(PlayerName);
+	}
+	NewRank.PlayerNames.Sort();
 	LeaderBoard.Add(NewRank);
 	LeaderBoard.Sort([](const FRankRecord& L, const FRankRecord& R)
 	{
@@ -336,16 +355,16 @@ void ALobbyGameStateBase::StartHttpListener(int32 Port)
 		return;
 	}
 
-	FHttpRequestHandler MatchResultHandler = FHttpRequestHandler::CreateLambda(
+	FHttpRequestHandler GameResultHandler = FHttpRequestHandler::CreateLambda(
 	   [this](const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete) -> bool
 	   {
 		  return this->HandleGameResultRequest(Request, OnComplete);
 	   }
 	);
 
-	HttpRouter->BindRoute(FHttpPath(TEXT("/api/game_result")), EHttpServerRequestVerbs::VERB_POST, MatchResultHandler);
+	HttpRouter->BindRoute(FHttpPath(TEXT("/api/game_result")), EHttpServerRequestVerbs::VERB_POST, GameResultHandler);
 
-	UE_LOG(LogTemp, Warning, TEXT("[Lobby] Additional Route Bound: /api/match_result"));
+	UE_LOG(LogTemp, Warning, TEXT("[Lobby] Additional Route Bound: /api/game_result"));
 }
 
 bool ALobbyGameStateBase::HandleGameResultRequest(const FHttpServerRequest& Request,
@@ -355,49 +374,17 @@ bool ALobbyGameStateBase::HandleGameResultRequest(const FHttpServerRequest& Requ
 	const TArray<uint8>& BodyData = Request.Body;
 	BodyStr.Append((const char*)BodyData.GetData(), BodyData.Num());
 
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(BodyStr);
-	TSharedPtr<FJsonObject> JsonObject;
-
-	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+	FGameResultReport RecievedReport;
+	if (FJsonObjectConverter::JsonObjectStringToUStruct(BodyStr,&RecievedReport,0,0))
 	{
-		int32 Port = JsonObject->GetIntegerField(TEXT("Port"));
-
-		bool bIsIdle = true;
-		if (JsonObject->HasField(TEXT("IsIdle")))
+		AsyncTask(ENamedThreads::GameThread, [this,RecievedReport]()
 		{
-			bIsIdle = JsonObject->GetBoolField(TEXT("IsIdle"));
-		}
-		FRankRecord NewRank;
-		if (JsonObject->HasField(TEXT("player_names")))
-		{
-			TArray<TSharedPtr<FJsonValue>> JsonNameArray= JsonObject->GetArrayField(TEXT("player_names"));
-			TArray<FString> PlayerNames_FString;
-			for (const TSharedPtr<FJsonValue>& Value : JsonNameArray)
-			{
-				if (Value.IsValid())
-				{
-					PlayerNames_FString.Add(Value->AsString());
-				}
-			}
-			PlayerNames_FString.Sort();
-			UE_LOG(LogTemp, Log, TEXT("Parsed %d players"), PlayerNames_FString.Num());
-			NewRank.PlayerNames = PlayerNames_FString;
-		}
-		
-		if (JsonObject->HasField(TEXT("num_clear_time")))
-		{
-			float ClearTime = JsonObject->GetNumberField(TEXT("num_clear_time"));
-			NewRank.ClearTime = ClearTime;
-		}
-		
-		AsyncTask(ENamedThreads::GameThread, [this, NewRank]()
-		{
-			OnLeaderBoardUpdated(NewRank);
+			OnLeaderBoardUpdated(RecievedReport);
 		});
-
 		TUniquePtr<FHttpServerResponse> Response = FHttpServerResponse::Create(TEXT("Success"), TEXT("text/plain"));
 		OnComplete(MoveTemp(Response));
 		return true;
 	}
+	
 	return false;
 }
