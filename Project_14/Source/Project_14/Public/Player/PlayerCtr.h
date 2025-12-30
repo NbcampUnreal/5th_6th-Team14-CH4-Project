@@ -71,6 +71,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void RemoveInGameHUD();
 
+	UFUNCTION(BlueprintCallable)
+	bool IsPushCharacter() const;
+
 protected:
 	virtual void BeginPlay() override;
 

@@ -48,7 +48,7 @@ public:
     float GetPlayTime() const;
 
     UPROPERTY(Replicated, BlueprintReadWrite)
-    float GameStartTime = -1.f;
+    float PlayTime = 0.f;
 
     UPROPERTY(Replicated, BlueprintReadWrite)
     float ClearPlayTime = -1.f;
