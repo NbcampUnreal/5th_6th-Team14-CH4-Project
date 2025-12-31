@@ -4,10 +4,12 @@
 #include "GameFramework/Actor.h"
 #include "WavePath.generated.h"
 
+// forward declarations
 class USceneComponent;
 class USphereComponent;
 class UStaticMeshComponent;
 class UStaticMesh;
+class UPrimitiveComponent;
 
 UCLASS()
 class PROJECT_14_API AWavePath : public AActor
@@ -22,149 +24,170 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 	// =========================
-	//  Cradle | Setup
+	//  Setup
 	// =========================
-
 	UPROPERTY(EditAnywhere, Category = "Cradle|Setup", meta = (ClampMin = "1", ClampMax = "50"))
 	int32 BallCount = 9;
 
 	UPROPERTY(EditAnywhere, Category = "Cradle|Setup", meta = (ClampMin = "0.0"))
-	float BallSpacing = 160.0f;
+	float BallSpacing = 240.0f;
 
-	// 비주얼 크기(보이는 공 크기)
+	// ✅ 높이 내리기: -250, -320...로 더 내릴 수 있음
+	UPROPERTY(EditAnywhere, Category = "Cradle|Setup")
+	float BallZOffset = -200.0f;
+
 	UPROPERTY(EditAnywhere, Category = "Cradle|Setup", meta = (ClampMin = "0.01"))
 	float BallScale = 1.0f;
 
-	// 비주얼 메쉬(비워두면 기본 Sphere)
+	// 비주얼 메쉬(비워두면 엔진 Sphere)
 	UPROPERTY(EditAnywhere, Category = "Cradle|Setup")
 	UStaticMesh* BallMesh = nullptr;
 
-	// ✅ 길로틴처럼 듬성듬성 배치: N개마다 큰 간격 추가
 	UPROPERTY(EditAnywhere, Category = "Cradle|Setup", meta = (ClampMin = "0"))
-	int32 GapEveryN = 3;
+	int32 GapEveryN = 0;
 
 	UPROPERTY(EditAnywhere, Category = "Cradle|Setup", meta = (ClampMin = "0.0"))
-	float ExtraGapSize = 260.0f;
+	float ExtraGapSize = 0.0f;
 
-	// ✅ 진짜 “빈 칸” 만들기: N번째마다 공을 아예 생성하지 않음
 	UPROPERTY(EditAnywhere, Category = "Cradle|Setup")
-	bool bSkipEveryNBall = true;
+	bool bSkipEveryNBall = false;
 
 	UPROPERTY(EditAnywhere, Category = "Cradle|Setup", meta = (ClampMin = "2"))
 	int32 SkipEveryN = 4;
 
 	// =========================
-	//  Cradle | Motion
+	//  Motion
 	// =========================
-
 	UPROPERTY(EditAnywhere, Category = "Cradle|Motion", meta = (ClampMin = "0.0"))
-	float PushAmplitude = 240.0f;
+	float PushAmplitude = 360.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Cradle|Motion", meta = (ClampMin = "0.05"))
-	float Period = 2.2f;
+	float Period = 2.6f;
 
 	UPROPERTY(EditAnywhere, Category = "Cradle|Motion", meta = (ClampMin = "0.0"))
-	float PhaseDelay = 0.14f;
+	float PhaseDelay = 0.10f;
 
 	UPROPERTY(EditAnywhere, Category = "Cradle|Motion", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float GlobalEasyScale = 0.70f;
+	float GlobalEasyScale = 0.75f;
 
+	// true=좌우(Right), false=앞뒤(Forward)
 	UPROPERTY(EditAnywhere, Category = "Cradle|Motion")
 	bool bUseRightVector = false;
 
 	UPROPERTY(EditAnywhere, Category = "Cradle|Motion")
 	bool bInvertDirection = false;
 
-	// ✅ 구슬마다 좌/우 방향 번갈아
+	// 공마다 방향 번갈아(+1/-1)
 	UPROPERTY(EditAnywhere, Category = "Cradle|Motion")
 	bool bAlternateDirectionPerBall = true;
 
-	// ✅ 구슬별 진폭 약간 랜덤
+	// 공마다 진폭 랜덤(0~1)
 	UPROPERTY(EditAnywhere, Category = "Cradle|Motion", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float AmplitudeJitter = 0.20f;
+	float AmplitudeJitter = 0.15f;
 
 	UPROPERTY(EditAnywhere, Category = "Cradle|Motion")
 	int32 RandomSeed = 12345;
 
+	// 물리 공을 목표 위치로 끌어가는 최대 속도(너무 크면 튐/불안정)
+	UPROPERTY(EditAnywhere, Category = "Cradle|Motion", meta = (ClampMin = "100.0"))
+	float MaxDriveSpeed = 2200.0f;
+
 	// =========================
-	//  Cradle | Hit
+	//  Hit / Push
 	// =========================
-
+	// ✅ 박치기 순간 확 날리는 힘
 	UPROPERTY(EditAnywhere, Category = "Cradle|Hit", meta = (ClampMin = "0.0"))
-	float KnockbackStrength = 1050.0f;
+	float KnockbackStrength = 4200.0f;
 
+	// ✅ 공 진행방향으로 더 “펀치” 느낌
 	UPROPERTY(EditAnywhere, Category = "Cradle|Hit", meta = (ClampMin = "0.0"))
-	float UpwardBoost = 450.0f;
+	float ForwardBoost = 1400.0f;
 
+	// ✅ 아래로 떨어뜨리기(낙사 유도)
+	UPROPERTY(EditAnywhere, Category = "Cradle|Hit", meta = (ClampMin = "0.0"))
+	float DownwardForce = 1600.0f;
+
+	// 연타 방지
 	UPROPERTY(EditAnywhere, Category = "Cradle|Hit", meta = (ClampMin = "0.0"))
 	float HitCooldown = 0.25f;
 
-	// ✅ 핵심: "충돌 판정만" 줄이는 비율 (1.0=그대로, 0.8=20% 축소)
+	// ✅ 충돌 판정 크기만 줄이기 (기본 0.8)
 	UPROPERTY(EditAnywhere, Category = "Cradle|Hit", meta = (ClampMin = "0.1", ClampMax = "1.0"))
 	float CollisionScale = 0.80f;
+
+	// ✅ 공이 무겁게 밀어내는 느낌
+	UPROPERTY(EditAnywhere, Category = "Cradle|Hit", meta = (ClampMin = "1.0"))
+	float MassKg = 250.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Cradle|Hit", meta = (ClampMin = "0.0"))
+	float LinearDamping = 2.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Cradle|Hit", meta = (ClampMin = "0.0"))
+	float AngularDamping = 4.0f;
+
+	// ✅ 버벅임 제거용: 히트 후 잠깐 Pawn 충돌 무시
+	UPROPERTY(EditAnywhere, Category = "Cradle|Hit", meta = (ClampMin = "0.0"))
+	float IgnorePawnAfterHitTime = 0.08f;
 
 private:
 	UPROPERTY()
 	USceneComponent* Root = nullptr;
 
-	// BallCount 길이로 유지 (빈 칸이면 nullptr)
 	UPROPERTY()
-	TArray<USphereComponent*> HitSpheres;
+	TArray<USphereComponent*> BallBodies;
 
 	UPROPERTY()
 	TArray<UStaticMeshComponent*> VisualMeshes;
 
-	// BallCount 길이로 유지 (빈 칸도 위치는 기록)
 	TArray<FVector> BaseLocalLocations;
+	TArray<float> BallDirSign;
+	TArray<float> BallAmpScale;
 
-	// BallCount 길이로 유지
-	TArray<float> BallDirSign;   // +1 / -1
-	TArray<float> BallAmpScale;  // 0.8~1.2 등
-
-	// 히트 쿨타임
 	TMap<TWeakObjectPtr<AActor>, float> LastHitTime;
 
-	// ====== 캐시(값이 바뀌면 재구성/재초기화) ======
+	// 캐시(재빌드)
 	int32 CachedBallCount = -1;
-	float CachedBallSpacing = -1.0f;
-	float CachedBallScale = -1.0f;
-	float CachedCollisionScale = -1.0f;
+	float CachedBallSpacing = -1.f;
+	float CachedBallScale = -1.f;
+	float CachedBallZOffset = -999999.f;
+	float CachedCollisionScale = -1.f;
 	UStaticMesh* CachedBallMesh = nullptr;
-
 	int32 CachedGapEveryN = -1;
-	float CachedExtraGapSize = -1.0f;
+	float CachedExtraGapSize = -1.f;
 	bool CachedSkipEnabled = false;
 	int32 CachedSkipEveryN = -1;
-
 	bool CachedAltDir = false;
-	float CachedJitter = -1.0f;
+	float CachedJitter = -1.f;
 	int32 CachedSeed = INT32_MIN;
 
 	// 유틸
 	float GetNow() const;
-	FVector GetMoveDir() const;
+	FVector GetMoveDirWorld() const;
+	float CalcCollisionRadius() const;
 
-	// 갱신
+	// 라이프사이클
 	void RefreshIfNeeded();
 	void DestroyBalls();
 	void BuildBalls();
 	void InitPerBallMotionParams();
-	void UpdateBalls();
+	void UpdateBalls(float DeltaTime);
 
-	// 충돌 반경 계산(UE 기본 Sphere는 반지름 50 기준)
-	float CalcCollisionRadius() const;
-
+	// 충돌 처리
 	UFUNCTION()
-	void OnBallBeginOverlap(
-		UPrimitiveComponent* OverlappedComp,
+	void OnBallHit(
+		UPrimitiveComponent* HitComp,
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex,
-		bool bFromSweep,
-		const FHitResult& SweepResult
+		FVector NormalImpulse,
+		const FHitResult& Hit
 	);
 
 	bool CanHit(AActor* OtherActor) const;
 	void MarkHit(AActor* OtherActor);
-	void ApplyKnockbackToCharacter(AActor* OtherActor) const;
+
+	// ✅ 반드시 2개 인자(Actor + 위치)
+	void ApplyKnockbackToCharacter(AActor* OtherActor, const FVector& FromBallWorld) const;
+
+	// ✅ 히트 직후 잠깐 Pawn 충돌 끊기(버벅임 제거)
+	void TemporarilyIgnorePawn(USphereComponent* BallBody) const;
 };
