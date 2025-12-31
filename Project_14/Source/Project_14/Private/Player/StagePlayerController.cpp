@@ -2,7 +2,10 @@
 
 
 #include "Player/StagePlayerController.h"
+
+#include "GameManager/ProjectGameInstance.h"
 #include "GameManager/StageGameModeBase.h"
+#include "Server/ServerConfigSettings.h" 
 
 void AStagePlayerController::ServerRPC_GiveUp_Implementation()
 {
@@ -25,6 +28,8 @@ void AStagePlayerController::ClientRPC_ShowGameEndUI_Implementation(EGameEndReas
 
 void AStagePlayerController::ClientRPC_ReturnToLobby_Implementation()
 {
-	FString LobbyIP = TEXT("127.0.0.1:7777"); 
-	ClientTravel(LobbyIP, ETravelType::TRAVEL_Absolute);
+	/*const UServerConfigSettings* Settings = UServerConfigSettings::Get();
+	FString LobbyIP = Settings->LobbyServerPublicIP + ":" + FString::FromInt(Settings->LobbyServerPort);*/
+	UProjectGameInstance* GI = Cast<UProjectGameInstance>(GetGameInstance());
+	ClientTravel(GI->LobbyServerPublicIP, ETravelType::TRAVEL_Absolute);
 }
