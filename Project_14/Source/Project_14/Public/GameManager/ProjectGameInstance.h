@@ -24,4 +24,8 @@ public:
 	//User Setting
 	UPROPERTY(BlueprintReadWrite, Category = "Player Info")
 	FString PlayerName = TEXT("Player");
+
+	//Lobby Ip
+	UPROPERTY(BlueprintReadWrite, Category = "Lobby Info")
+	FString LobbyServerPublicIP = TEXT("127.0.0.1");
 };

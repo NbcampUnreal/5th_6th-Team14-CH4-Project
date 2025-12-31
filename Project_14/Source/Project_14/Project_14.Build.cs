@@ -26,11 +26,12 @@ public class Project_14 : ModuleRules
             
             //HTTP protocol
             "HTTP",
-            "HttpServer",
+			"HTTPServer",
+            
             
             //JSon
             "Json",
-            "JsonUtilities", "HttpServer",
+            "JsonUtilities",
             
             //development
             "DeveloperSettings",
