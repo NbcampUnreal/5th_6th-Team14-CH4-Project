@@ -56,7 +56,7 @@ public:
 	{
 		int32 Minutes = FMath::FloorToInt(TotalSeconds/60.f);
 		int32 Seconds = FMath::FloorToInt(FMath::Fmod(TotalSeconds, 60.f));
-		return FString::Printf(TEXT("02d:%02d"), Minutes, Seconds);
+		return FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
 	}
 	
 	
