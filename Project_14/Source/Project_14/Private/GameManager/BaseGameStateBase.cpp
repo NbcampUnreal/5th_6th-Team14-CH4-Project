@@ -112,7 +112,9 @@ void ABaseGameStateBase::SendServerStatusToLobby(int32 MyPort, bool bIsIdle)
 
 	FHttpRequestRef Request = FHttpModule::Get().CreateRequest();
 	const UServerConfigSettings* Settings = UServerConfigSettings::Get();
-	FString LobbyURL = Settings->LobbyServerHTTPURL;
+	FString BaseAddress = Settings->LobbyServerHTTPURL;
+	FString FullURL = FString::Printf(TEXT("http://%s/api/server_status"), *BaseAddress);
+	Request->SetURL(FullURL);
 	Request->SetVerb(TEXT("POST"));
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetContentAsString(RequestBody);
