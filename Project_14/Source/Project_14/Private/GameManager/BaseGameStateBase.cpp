@@ -145,10 +145,14 @@ void ABaseGameStateBase::SendGameResultToLobby(bool bIsCleared, float FloatClear
 		return;
 	}
 	const UServerConfigSettings* Settings = UServerConfigSettings::Get();
-	FString LobbyURL = Settings->LobbyServerHTTPURL;
+	FString BaseAddress = Settings->LobbyServerHTTPURL;
+	FString FullURL = FString::Printf(TEXT("http://%s/api/server_status"), *BaseAddress);
+
+	UE_LOG(LogTemp, Log, TEXT("[HTTP] Sending Status to: %s"), *FullURL);
+
 	FHttpRequestRef Request = FHttpModule::Get().CreateRequest();
-	Request->SetURL(LobbyURL + TEXT("/api/game_result"));
 	Request->SetVerb(TEXT("POST"));
+	Request->SetURL(FullURL);
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetContentAsString(RequestBody);
 

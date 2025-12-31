@@ -29,21 +29,31 @@ void UUW_TitleLayout::NativeOnInitialized()
 
 void UUW_TitleLayout::OnPlayButtonClicked()
 {
-	FString InputName = PlayerNameEditableText->GetText().ToString();
-	if (InputName.IsEmpty())
+	FString InputName = PlayerNameEditableText->GetText().ToString().TrimStartAndEnd();
+	FString InputIP = ServerIPEditableText->GetText().ToString().TrimStartAndEnd();
+
+	
+	if (InputName.IsEmpty() || InputIP.IsEmpty())
 	{
+		
+		UE_LOG(LogTemp, Warning, TEXT("Name or IP is empty!"));
 		return;
 	}
 	UProjectGameInstance* GI = Cast<UProjectGameInstance>(GetGameInstance());
 	if (GI != nullptr)
 	{
 		GI->PlayerName = InputName;
+		GI->LobbyServerPublicIP = ServerIPEditableText->GetText().ToString();
+	}else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to cast GameInstance!"));
+		return; 
 	}
 	ATitlePlayerController* PlayerController = GetOwningPlayer<ATitlePlayerController>();
 	if (IsValid(PlayerController) == true)
 	{
-		FText ServerIP = ServerIPEditableText->GetText();
-		PlayerController->JoinServer(ServerIP.ToString());
+		//FText ServerIP = GI->LobbyServerPublicIP;
+		PlayerController->JoinServer(GI->LobbyServerPublicIP);
 	}
 }
 
@@ -51,4 +61,3 @@ void UUW_TitleLayout::OnExitButtonClicked()
 {
 	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
 }
-
