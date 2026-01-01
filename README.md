@@ -42,7 +42,7 @@
 
 **소개 영상**
 
-[![유튜브 링크](https://img.youtube.com/vi/kVZYAlOjymE/0.jpg)](https://youtu.be/kVZYAlOjymE)
+추가예정
 
 </details>
 
