@@ -14,10 +14,14 @@ class PROJECT_14_API UServerConfigSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
-	public:
+public:
 	//game,lobby server config
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "LobbyServer")
 	FString LobbyServerHTTPURL = TEXT("http://127.0.0.1:8081");
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "LobbyServer")
+	FString LobbyServerPublicIP = TEXT("127.0.0.1");
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "LobbyServer")
+	int32 LobbyServerPort = 7777;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "LobbyServer")
 	int32 LobbyHTTPPort = 8081;

@@ -22,19 +22,20 @@ public class Project_14 : ModuleRules
 
 			//Niagara
 			"Niagara",          
-            "NiagaraCore",
+			"NiagaraCore",
             
-            //HTTP protocol
-            "HTTP",
-            "HttpServer",
+			//HTTP protocol
+			"HTTP",
+			"HTTPServer",
             
-            //JSon
-            "Json",
-            "JsonUtilities", "HttpServer",
             
-            //development
-            "DeveloperSettings",
+			//JSon
+			"Json",
+			"JsonUtilities",
             
-        });
+			//development
+			"DeveloperSettings",
+            
+		});
 	}
 }
