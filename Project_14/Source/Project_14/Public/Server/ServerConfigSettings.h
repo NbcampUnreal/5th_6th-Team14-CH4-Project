@@ -7,9 +7,9 @@
 #include "ServerConfigSettings.generated.h"
 
 /**
- * 
+ *
  */
-UCLASS(Config = Game, DefaultConfig,Meta = (DisplayName = "Server Network Settings"))
+UCLASS(Config = Game, DefaultConfig, Meta = (DisplayName = "Server Network Settings"))
 class PROJECT_14_API UServerConfigSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
@@ -29,7 +29,7 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GameServer")
 	FString GameServerPublicIP = TEXT("127.0.0.1");
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GameServer")
-	TArray<int32> GameServerPorts = {7778,7779};
+	TArray<int32> GameServerPorts = { 7778,7779 };
 
 	//voice chatt config
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Vivox")

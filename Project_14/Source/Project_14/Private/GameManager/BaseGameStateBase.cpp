@@ -39,10 +39,10 @@ void ABaseGameStateBase::StartHttpListener(int32 Port)
 		}
 	);
 
-	
+
 	HttpRouter->BindRoute(FHttpPath(TEXT("/api/server_status")), EHttpServerRequestVerbs::VERB_POST, RequestHandler);
 	HttpServerModule.StartAllListeners();
-	
+
 	UE_LOG(LogTemp, Warning, TEXT("[HTTP] Listener Started on Port %d"), Port);
 }
 
@@ -78,14 +78,14 @@ bool ABaseGameStateBase::HandleServerStatusRequest(const FHttpServerRequest& Req
 	const TArray<uint8>& BodyData = Request.Body;
 	BodyStr.Append((const char*)BodyData.GetData(), BodyData.Num());
 
-	
+
 	FServerStatusReport ReceivedStatus;
 	if (FJsonObjectConverter::JsonObjectStringToUStruct(BodyStr, &ReceivedStatus, 0, 0))
 	{
 		AsyncTask(ENamedThreads::GameThread, [this, ReceivedStatus]()
-		{
-			OnServerStatusReported(ReceivedStatus.Port, ReceivedStatus.IsIdle);
-		});
+			{
+				OnServerStatusReported(ReceivedStatus.Port, ReceivedStatus.IsIdle);
+			});
 
 		TUniquePtr<FHttpServerResponse> Response = FHttpServerResponse::Create(TEXT("Success"), TEXT("text/plain"));
 		OnComplete(MoveTemp(Response));
@@ -98,7 +98,7 @@ bool ABaseGameStateBase::HandleServerStatusRequest(const FHttpServerRequest& Req
 void ABaseGameStateBase::SendServerStatusToLobby(int32 MyPort, bool bIsIdle)
 {
 	if (!HasAuthority()) return;
-	
+
 	FServerStatusReport StatusData;
 	StatusData.Port = MyPort;
 	StatusData.IsIdle = bIsIdle;
@@ -118,11 +118,11 @@ void ABaseGameStateBase::SendServerStatusToLobby(int32 MyPort, bool bIsIdle)
 	Request->SetVerb(TEXT("POST"));
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetContentAsString(RequestBody);
-    
+
 	Request->OnProcessRequestComplete().BindLambda([](FHttpRequestPtr, FHttpResponsePtr Response, bool bSuccess)
-	{
-	   if(bSuccess) UE_LOG(LogTemp, Log, TEXT("[HTTP] Status Notification Sent"));
-	});
+		{
+			if (bSuccess) UE_LOG(LogTemp, Log, TEXT("[HTTP] Status Notification Sent"));
+		});
 
 	Request->ProcessRequest();
 }
@@ -131,7 +131,7 @@ void ABaseGameStateBase::SendGameResultToLobby(bool bIsCleared, float FloatClear
 {
 	if (!HasAuthority()) return;
 
-	
+
 	FGameResultReport ResultReport;
 	ResultReport.is_cleared = bIsCleared;
 	ResultReport.num_clear_time = FloatClearTime;
@@ -148,7 +148,7 @@ void ABaseGameStateBase::SendGameResultToLobby(bool bIsCleared, float FloatClear
 	}
 	const UServerConfigSettings* Settings = UServerConfigSettings::Get();
 	FString BaseAddress = Settings->LobbyServerHTTPURL;
-	FString FullURL = FString::Printf(TEXT("http://%s/api/server_status"), *BaseAddress);
+	FString FullURL = FString::Printf(TEXT("http://%s/api/game_result"), *BaseAddress);
 
 	UE_LOG(LogTemp, Log, TEXT("[HTTP] Sending Status to: %s"), *FullURL);
 
@@ -160,4 +160,3 @@ void ABaseGameStateBase::SendGameResultToLobby(bool bIsCleared, float FloatClear
 
 	Request->ProcessRequest();
 }
-
