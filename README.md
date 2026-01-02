@@ -42,7 +42,7 @@
 
 **소개 영상**
 
-추가예정
+https://www.notion.so/teamsparta/14-2a82dc3ef51480fdb3dbeec13f43fea2?source=copy_link#2dc2dc3ef5148059bb41d2041762a739
 
 </details>
 
