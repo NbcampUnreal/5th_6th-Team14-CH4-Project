@@ -7,9 +7,9 @@
 #include "ServerConfigSettings.generated.h"
 
 /**
- * 
+ *
  */
-UCLASS(Config = Game, DefaultConfig,Meta = (DisplayName = "Server Network Settings"))
+UCLASS(Config = Game, DefaultConfig, Meta = (DisplayName = "Server Network Settings"))
 class PROJECT_14_API UServerConfigSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
@@ -17,7 +17,7 @@ class PROJECT_14_API UServerConfigSettings : public UDeveloperSettings
 public:
 	//game,lobby server config
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "LobbyServer")
-	FString LobbyServerHTTPURL = TEXT("http://127.0.0.1:8081");
+	FString LobbyServerHTTPURL = TEXT("127.0.0.1:8081");
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "LobbyServer")
 	FString LobbyServerPublicIP = TEXT("127.0.0.1");
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "LobbyServer")
@@ -29,7 +29,7 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GameServer")
 	FString GameServerPublicIP = TEXT("127.0.0.1");
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GameServer")
-	TArray<int32> GameServerPorts = {7778,7779};
+	TArray<int32> GameServerPorts = { 7778,7779 };
 
 	//voice chatt config
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Vivox")
