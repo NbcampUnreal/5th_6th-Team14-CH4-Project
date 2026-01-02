@@ -322,13 +322,15 @@ void ALobbyGameStateBase::OnServerStatusReported(int32 ServerPort, bool bIsIdle)
 void ALobbyGameStateBase::OnLeaderBoardUpdated(FGameResultReport RecievedReport)
 {
 	Super::OnLeaderBoardUpdated(RecievedReport);
-	FRankRecord NewRank;
-	NewRank.ClearTime = RecievedReport.num_clear_time;
+	
+	TArray<FString> PlayerNames;
+	float ClearTime = RecievedReport.num_clear_time;
 	for (FString PlayerName : RecievedReport.player_names)
 	{
-		NewRank.PlayerNames.Add(PlayerName);
+		PlayerNames.Add(PlayerName);
 	}
-	NewRank.PlayerNames.Sort();
+	PlayerNames.Sort();
+	FRankRecord NewRank(PlayerNames, ClearTime);
 	LeaderBoard.Add(NewRank);
 	LeaderBoard.Sort([](const FRankRecord& L, const FRankRecord& R)
 	{
