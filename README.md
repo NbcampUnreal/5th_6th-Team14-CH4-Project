@@ -42,7 +42,7 @@
 
 **소개 영상**
 
-[🎮 Coop or Chaos 시연 영상](https://file.notion.so/f/f/83c75a39-3aba-4ba4-a792-7aefe4b07895/e8e4a509-b323-435a-a7c7-279c5608473e/CoopOrChaos_%EC%8B%9C%EC%97%B0%EC%98%81%EC%83%81_%EC%B5%9C%EC%A2%85%EB%B3%B8.mp4?table=block&id=2dc2dc3e-f514-8059-bb41-d2041762a739&spaceId=83c75a39-3aba-4ba4-a792-7aefe4b07895&expirationTimestamp=1767355200000&signature=IAygki8CNoSlqHQIHhTWflb5G0-8Vml7lZRzAOiZAu4&downloadName=CoopOrChaos_%EC%8B%9C%EC%97%B0%EC%98%81%EC%83%81_%EC%B5%9C%EC%A2%85%EB%B3%B8.mp4)
+[🎮 Coop or Chaos 시연 영상](https://tv.kakao.com/v/460365773)
 
 </details>
 
